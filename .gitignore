@@ -1,0 +1,61 @@
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+auth.json
+
+# Dependencies
+/node_modules
+/vendor
+
+# Laravel Build & Cache Assets
+/public/build
+/public/hot
+/public/storage
+/public/fonts-manifest.dev.json
+
+# Storage Files & Uploaded Media
+/storage/app/public/*
+!/storage/app/public/.gitignore
+/storage/framework/cache/data/*
+!/storage/framework/cache/data/.gitignore
+/storage/framework/sessions/*
+!/storage/framework/sessions/.gitignore
+/storage/framework/testing/*
+!/storage/framework/testing/.gitignore
+/storage/framework/views/*
+!/storage/framework/views/.gitignore
+/storage/logs/*
+!/storage/logs/.gitignore
+/storage/*.key
+/storage/pail
+
+# Logs & Temporary Files
+*.log
+.phpunit.result.cache
+/.phpunit.cache
+_ide_helper.php
+_ide_helper_models.php
+.phpactor.json
+
+# OS & System Junk
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# IDE & Editor Files
+/.vscode
+/.idea
+/.cursor/
+/.codex
+/.nova
+/.zed
+*.sublime-project
+*.sublime-workspace
+
+# Local Tools & Environments
+Homestead.json
+Homestead.yaml
+.agents/
+.ai/
