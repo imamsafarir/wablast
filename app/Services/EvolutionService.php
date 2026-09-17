@@ -194,18 +194,50 @@ class EvolutionService
     }
 
     // Mengecek status koneksi (open, close, connecting)
-    public function getConnectionState()
+    public function getConnectionState(): string
     {
-        $response = Http::withHeaders([
-            'apikey' => $this->apiKey,
-        ])->get("{$this->baseUrl}/instance/connectionState/{$this->instanceName}");
+        try {
+            $response = Http::withHeaders([
+                'apikey' => $this->apiKey,
+            ])->timeout(5)->get("{$this->baseUrl}/instance/connectionState/{$this->instanceName}");
 
-        if ($response->successful()) {
-            return $response->json()['instance']['state'] ?? 'close';
+            if ($response->successful()) {
+                $state = $response->json()['instance']['state'] ?? 'close';
+                if ($state === 'open') {
+                    return 'open';
+                }
+            }
+
+            // Fallback: periksa status dari fetchInstances
+            $fetchRes = Http::withHeaders([
+                'apikey' => $this->apiKey,
+            ])->timeout(5)->get("{$this->baseUrl}/instance/fetchInstances");
+
+            if ($fetchRes->successful()) {
+                $instances = $fetchRes->json();
+                if (is_array($instances)) {
+                    foreach ($instances as $item) {
+                        $name = $item['name'] ?? ($item['instance']['instanceName'] ?? null);
+                        if ($name === $this->instanceName) {
+                            $status = $item['connectionStatus'] ?? ($item['instance']['connectionStatus'] ?? null);
+                            if ($status === 'open') {
+                                return 'open';
+                            }
+
+                            return $status ?? 'close';
+                        }
+                    }
+                }
+            }
+
+            if ($response->status() === 404) {
+                return 'not_found';
+            }
+
+            return $response->successful() ? ($response->json()['instance']['state'] ?? 'close') : 'close';
+        } catch (\Throwable $e) {
+            return 'error';
         }
-
-        // Jika API mereturn error (misal 404), berarti instance belum terbuat
-        return 'not_found';
     }
 
     // Mengambil QR Code yang aman dari error 'already exists'
@@ -303,6 +335,16 @@ class EvolutionService
             ];
         }
 
+        $cacheKey = "wa_active_groups_{$this->instanceName}";
+        if ($refresh) {
+            Cache::forget($cacheKey);
+        } elseif (Cache::has($cacheKey)) {
+            $cached = Cache::get($cacheKey);
+            if (is_array($cached)) {
+                return $cached;
+            }
+        }
+
         $state = $this->getConnectionState();
         if ($state !== 'open') {
             return [
@@ -313,16 +355,6 @@ class EvolutionService
                 'state' => $state,
                 'message' => "WhatsApp instance '{$this->instanceName}' belum terhubung (Status: {$state}). Silakan hubungkan WhatsApp terlebih dahulu di menu Pengaturan.",
             ];
-        }
-
-        $cacheKey = "wa_active_groups_{$this->instanceName}";
-        if ($refresh) {
-            Cache::forget($cacheKey);
-        } elseif (Cache::has($cacheKey)) {
-            $cached = Cache::get($cacheKey);
-            if (is_array($cached)) {
-                return $cached;
-            }
         }
 
         try {
@@ -359,42 +391,34 @@ class EvolutionService
                 Log::warning("findChats error for instance {$this->instanceName}: {$eFindChats->getMessage()}");
             }
 
-            // 2. Coba gabungkan dengan fetchAllGroups (jika ada grup baru yang belum sempat ada riwayat chat)
-            try {
-                $resAll = Http::withHeaders(['apikey' => $this->apiKey])
-                    ->timeout(3)
-                    ->get("{$this->baseUrl}/group/fetchAllGroups/{$this->instanceName}?getParticipants=false");
+            $candidates = array_values($groupsMap);
 
-                if ($resAll->successful()) {
-                    $allGroups = $resAll->json();
-                    if (is_array($allGroups)) {
-                        foreach ($allGroups as $g) {
-                            $jid = $g['id'] ?? ($g['jid'] ?? '');
-                            if (str_contains($jid, '@g.us')) {
-                                $subject = trim((string) ($g['subject'] ?? ($g['name'] ?? '')));
-                                if (! isset($groupsMap[$jid])) {
-                                    $groupsMap[$jid] = [
-                                        'id' => $jid,
-                                        'subject' => $subject ?: 'Grup WhatsApp',
-                                        'updatedAt' => null,
-                                        'size' => isset($g['size']) ? (int) $g['size'] : (isset($g['participants']) ? count($g['participants']) : null),
-                                    ];
-                                } elseif (! empty($subject) && $groupsMap[$jid]['subject'] === 'Grup WhatsApp') {
-                                    $groupsMap[$jid]['subject'] = $subject;
-                                }
-                            }
-                        }
-                    }
+            // 2. Filter & Eliminasi Grup Ghost / Residu Sesi Lama:
+            // Mengeliminasi grup dari nomor sesi lama di database Evolution API
+            // tanpa melakukan request paralel massal yang menyebabkan socket Baileys timeout/400.
+            $excludedMap = array_flip($this->getExcludedGroupJids($this->instanceName));
+            $validGroups = [];
+
+            foreach ($candidates as $item) {
+                $jid = $item['id'];
+
+                // Abaikan jika termasuk residu ghost JID yang diketahui dari instance lain
+                if (isset($excludedMap[$jid])) {
+                    continue;
                 }
-            } catch (\Throwable $eAll) {
-                // Timeout di fetchAllGroups wajar untuk instance dengan >100 grup, abaikan
+
+                // Abaikan jika pernah terkonfirmasi forbidden di cache
+                $statusKey = "wa_grp_status_{$this->instanceName}_{$jid}";
+                if (Cache::get($statusKey) === 'forbidden') {
+                    continue;
+                }
+
+                $validGroups[] = $item;
             }
 
-            $result = array_values($groupsMap);
-
-            if (! empty($result)) {
-                // Urutkan grup: yang paling baru aktif/diupdate di atas, lalu alfabetis
-                usort($result, function ($a, $b) {
+            if (! empty($validGroups)) {
+                // Urutkan grup: yang paling baru aktif di atas, lalu alfabetis
+                usort($validGroups, function ($a, $b) {
                     $timeA = ! empty($a['updatedAt']) ? strtotime($a['updatedAt']) : 0;
                     $timeB = ! empty($b['updatedAt']) ? strtotime($b['updatedAt']) : 0;
                     if ($timeA !== $timeB) {
@@ -406,11 +430,11 @@ class EvolutionService
 
                 $data = [
                     'success' => true,
-                    'groups' => $result,
+                    'groups' => $validGroups,
                     'instance' => $this->instanceName,
                     'connected' => true,
                     'state' => 'open',
-                    'total' => count($result),
+                    'total' => count($validGroups),
                 ];
 
                 Cache::put($cacheKey, $data, 300);
@@ -462,6 +486,8 @@ class EvolutionService
             if (! $response->successful()) {
                 $status = $response->status();
                 if ($status === 404 || $status === 403) {
+                    Cache::put("wa_grp_status_{$this->instanceName}_{$groupJid}", 'forbidden', 86400 * 7);
+
                     return [
                         'success' => false,
                         'message' => 'Grup WhatsApp tidak ditemukan atau nomor Anda bukan anggota aktif grup ini (Forbidden).',
@@ -576,5 +602,96 @@ class EvolutionService
         return ! empty($rawString) && ! str_contains($rawString, '[object Object]')
             ? $rawString
             : 'Gagal dikirim oleh WhatsApp Gateway.';
+    }
+
+    /**
+     * Known ghost / leaked group JIDs from other historical sessions in Evolution API DB
+     * that must be excluded from specific instances (e.g. admin_bpvp_pangkep).
+     *
+     * @return array<string>
+     */
+    public function getExcludedGroupJids(string $instanceName): array
+    {
+        if ($instanceName === 'admin_bpvp_pangkep') {
+            return [
+                '120363410898413604@g.us',
+                '120363428871201042@g.us',
+                '6285394798991-1524191383@g.us',
+                '120363303764532328@g.us',
+                '120363409953532990@g.us',
+                '120363169457510980@g.us',
+                '120363409779151222@g.us',
+                '120363222649201158@g.us',
+                '120363387144085168@g.us',
+                '6285212989694-1579827342@g.us',
+                '120363163896209999@g.us',
+                '120363042885842204@g.us',
+                '6281915528044-1624254754@g.us',
+                '120363244043402425@g.us',
+                '120363409833057155@g.us',
+                '120363409743341759@g.us',
+                '6285299189995-1580434924@g.us',
+                '120363163932830072@g.us',
+                '120363416246605170@g.us',
+                '6285239545469-1463562635@g.us',
+                '6285238546460-1615030394@g.us',
+                '120363321001982536@g.us',
+                '120363402755204623@g.us',
+                '120363418552450261@g.us',
+                '120363159802663137@g.us',
+                '120363409625757415@g.us',
+                '6282187737233-1556284655@g.us', // LAMBE ESSE✨
+                '6285934536335-1601005081@g.us',
+                '120363411798402715@g.us',
+                '120363410331429900@g.us',
+                '120363405068285405@g.us',
+                '120363403841459920@g.us',
+                '120363025651372652@g.us',
+                '6281317176165-1570676161@g.us',
+                '120363422212171945@g.us',
+                '6282188468863-1510225549@g.us',
+                '6289695622193-1608734420@g.us', // KEPALA KOTAK
+                '120363412524774200@g.us',
+                '120363363144386421@g.us',
+                '6282347273939-1561972765@g.us',
+                '120363196354824639@g.us',
+                '120363425192065756@g.us',
+                '120363178466587788@g.us',
+                '120363405664891003@g.us',
+                '6285342218362-1537141101@g.us',
+                '120363418386235437@g.us',
+                '120363327186211950@g.us',
+                '120363419092090683@g.us',
+                '6285255829867-1533886875@g.us',
+                '120363426491943594@g.us',
+                '120363405940370816@g.us',
+                '120363241001172096@g.us',
+                '6282188222812-1526294873@g.us',
+                '6285255636989-1567517357@g.us',
+                '120363167935160025@g.us',
+                '120363403449549135@g.us',
+                '120363420663493812@g.us',
+                '6282187737233-1635599895@g.us', // Sudiang racing team
+                '6281317176165-1570425722@g.us',
+                '120363250577793858@g.us',
+                '120363231144288320@g.us',
+                '120363401473841629@g.us',
+                '120363241920731305@g.us',
+                '120363200366237580@g.us',
+                '62895806384064-1554605811@g.us',
+                '120363045618438919@g.us',
+                '120363419474389571@g.us',
+                '120363329026994823@g.us',
+                '6285336054144-1621414168@g.us',
+                '120363043866524510@g.us',
+                '120363325180667500@g.us',
+                '120363341207552808@g.us',
+                '120363334202107020@g.us',
+                '120363332248436910@g.us',
+                '120363242125834716@g.us',
+            ];
+        }
+
+        return [];
     }
 }

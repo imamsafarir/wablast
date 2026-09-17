@@ -216,10 +216,10 @@
                                 class="mb-5 bg-white rounded-2xl border border-emerald-200/80 shadow-sm overflow-hidden transition-all duration-300">
                                 <!-- Dropdown Header / Toggle Bar -->
                                 <div @click="toggleGroupDropdown()"
-                                    class="w-full px-4 py-3.5 bg-gradient-to-r from-emerald-50/90 to-[#e7ffdb]/70 hover:from-emerald-100/90 hover:to-[#e7ffdb] flex items-center justify-between cursor-pointer select-none transition-colors border-b border-emerald-100/80">
-                                    <div class="flex items-center gap-3">
+                                    class="w-full px-5 py-4 bg-gradient-to-r from-emerald-50/70 via-white to-emerald-50/40 hover:from-emerald-100/70 hover:to-emerald-50/70 flex items-center justify-between cursor-pointer select-none transition-colors border-b border-emerald-100/80">
+                                    <div class="flex items-center gap-3.5 min-w-0">
                                         <span
-                                            class="w-9 h-9 rounded-xl bg-gradient-to-br from-[#128C7E] to-[#075e54] text-white flex items-center justify-center shadow-sm shrink-0">
+                                            class="w-10 h-10 rounded-2xl bg-[#128C7E] text-white flex items-center justify-center shadow-md shadow-emerald-600/20 shrink-0">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor"
                                                 viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -227,12 +227,13 @@
                                                 </path>
                                             </svg>
                                         </span>
-                                        <div class="text-left">
+                                        <div class="text-left min-w-0">
                                             <div class="flex items-center gap-2 flex-wrap">
-                                                <h4 class="text-sm font-bold text-gray-800">Pilih Grup WhatsApp (Kirim
-                                                    Pesan ke Grup)</h4>
+                                                <h4
+                                                    class="text-sm sm:text-base font-bold text-gray-800 tracking-tight">
+                                                    Pilih Grup WhatsApp (Kirim Pesan ke Grup)</h4>
                                                 <span
-                                                    class="text-[11px] font-mono px-2 py-0.5 rounded-md bg-white border border-emerald-200 text-emerald-900 font-bold shadow-2xs flex items-center gap-1">
+                                                    class="text-[11px] font-mono px-2.5 py-0.5 rounded-md bg-white border border-emerald-200 text-emerald-900 font-bold shadow-2xs flex items-center gap-1">
                                                     <svg class="w-3 h-3 text-emerald-600" fill="none"
                                                         stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round"
@@ -244,7 +245,7 @@
                                                 </span>
                                                 <template x-if="isInstanceConnected">
                                                     <span
-                                                        class="text-[11px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                        class="text-[11px] font-bold bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1.5 shadow-2xs">
                                                         <span
                                                             class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                                                         Terhubung
@@ -252,31 +253,31 @@
                                                 </template>
                                                 <template x-if="!isInstanceConnected">
                                                     <span
-                                                        class="text-[11px] font-bold bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                        class="text-[11px] font-bold bg-rose-100 text-rose-700 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1.5 shadow-2xs">
                                                         <span class="w-2 h-2 rounded-full bg-rose-500"></span>
                                                         Belum Terhubung
                                                     </span>
                                                 </template>
                                                 <span x-show="accountGroups.length > 0"
-                                                    class="text-[11px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full"
-                                                    x-text="accountGroups.length + ' grup aktif'"></span>
+                                                    class="text-[11px] font-bold bg-white text-[#128C7E] border border-emerald-200 px-2.5 py-0.5 rounded-full shadow-2xs"
+                                                    x-text="accountGroups.length + ' grup terdeteksi'"></span>
                                             </div>
-                                            <p class="text-xs text-gray-500">Pilih grup untuk dikirimi pesan langsung
-                                                ke grup, atau tarik nomor kontak anggota.</p>
+                                            <p class="text-xs text-gray-500 mt-0.5">Kirim pesan blast langsung ke grup,
+                                                atau simpan seluruh kontak isi grup ke Buku Alamat.</p>
                                         </div>
                                     </div>
 
-                                    <div class="flex items-center gap-2">
-                                        <span x-show="!openGroupDropdown"
-                                            class="hidden sm:inline-block text-xs font-semibold text-[#128C7E] bg-white px-2.5 py-1 rounded-lg border border-emerald-200 shadow-2xs">
-                                            Buka Dropdown
+                                    <div class="flex items-center gap-2 shrink-0 ml-2">
+                                        <span
+                                            class="text-xs font-bold text-[#128C7E] bg-white px-3 py-1.5 rounded-xl border border-emerald-200 shadow-2xs flex items-center gap-1.5">
+                                            <span x-text="openGroupDropdown ? 'Tutup Pilihan' : 'Buka Pilihan'"></span>
+                                            <svg class="w-4 h-4 transform transition-transform duration-200"
+                                                :class="{ 'rotate-180': openGroupDropdown }" fill="none"
+                                                stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M19 9l-7 7-7-7"></path>
+                                            </svg>
                                         </span>
-                                        <svg class="w-5 h-5 text-gray-500 transform transition-transform duration-200"
-                                            :class="{ 'rotate-180 text-[#128C7E]': openGroupDropdown }" fill="none"
-                                            stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M19 9l-7 7-7-7"></path>
-                                        </svg>
                                     </div>
                                 </div>
 
@@ -366,11 +367,11 @@
 
                                     <!-- Scrollable Groups List -->
                                     <div
-                                        class="max-h-56 overflow-y-auto bg-white rounded-xl border border-gray-200 p-2 space-y-1 shadow-inner">
+                                        class="max-h-80 overflow-y-auto bg-white rounded-2xl border border-gray-200/90 p-2.5 space-y-2 shadow-inner">
                                         <template x-if="isLoadingGroups && accountGroups.length === 0">
                                             <div
-                                                class="py-8 text-center text-xs text-gray-500 flex flex-col items-center justify-center gap-2">
-                                                <svg class="w-6 h-6 animate-spin text-[#128C7E]" fill="none"
+                                                class="py-10 text-center text-xs text-gray-500 flex flex-col items-center justify-center gap-2.5">
+                                                <svg class="w-7 h-7 animate-spin text-[#128C7E]" fill="none"
                                                     viewBox="0 0 24 24">
                                                     <circle class="opacity-25" cx="12" cy="12" r="10"
                                                         stroke="currentColor" stroke-width="4"></circle>
@@ -378,16 +379,16 @@
                                                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
                                                     </path>
                                                 </svg>
-                                                <span>Memeriksa dan memvalidasi grup aktif dari WhatsApp
-                                                    Gateway...</span>
+                                                <span class="font-medium">Memuat dan memvalidasi grup aktif dari
+                                                    WhatsApp Gateway...</span>
                                             </div>
                                         </template>
 
                                         <template
                                             x-if="!isLoadingGroups && accountGroups.length === 0 && !isInstanceConnected">
-                                            <div class="py-8 text-center text-xs text-amber-700 space-y-1">
-                                                <p class="font-bold">WhatsApp pada instance "<span
-                                                        x-text="userInstance"></span>" belum terhubung.</p>
+                                            <div class="py-10 text-center text-xs text-amber-700 space-y-1.5">
+                                                <p class="font-bold text-sm text-amber-900">WhatsApp pada instance
+                                                    "<span x-text="userInstance"></span>" belum terhubung.</p>
                                                 <p class="text-gray-400">Hubungkan WhatsApp di menu Pengaturan untuk
                                                     memuat dan memilih grup.</p>
                                             </div>
@@ -395,42 +396,85 @@
 
                                         <template
                                             x-if="!isLoadingGroups && accountGroups.length === 0 && isInstanceConnected">
-                                            <div class="py-8 text-center text-xs text-gray-400">
-                                                Belum ada grup yang dimuat untuk instance "<span
-                                                    x-text="userInstance"></span>". Klik tombol <strong>"Segarkan
-                                                    Grup"</strong>
-                                                di atas.
+                                            <div class="py-10 text-center text-xs text-gray-400 space-y-1">
+                                                <p>Belum ada grup yang dimuat untuk instance "<span
+                                                        x-text="userInstance"></span>".</p>
+                                                <p>Klik tombol <strong>"Segarkan Grup"</strong> di atas untuk mengambil
+                                                    data terbaru.</p>
                                             </div>
                                         </template>
 
                                         <template x-for="g in filteredAccountGroups" :key="g.id">
                                             <div
-                                                class="flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 border border-slate-100 transition-colors gap-2">
+                                                class="flex flex-col sm:flex-row sm:items-center justify-between p-2.5 sm:p-3 rounded-xl bg-white hover:bg-emerald-50/40 border border-slate-200/90 hover:border-emerald-300 transition-all gap-2 shadow-2xs">
                                                 <label class="flex items-center gap-2.5 min-w-0 cursor-pointer flex-1">
                                                     <input type="checkbox" :value="g.id"
                                                         x-model="selectedGroupIds"
                                                         class="w-4 h-4 text-[#128C7E] rounded border-gray-300 focus:ring-[#128C7E]">
-                                                    <div class="min-w-0">
-                                                        <span class="font-bold text-gray-800 text-xs truncate block"
-                                                            x-text="g.subject"></span>
-                                                        <span class="text-[10px] text-gray-400 font-normal block"
-                                                            x-text="g.size ? g.size + ' anggota' : 'Grup Aktif'"></span>
+                                                    <div
+                                                        class="w-7 h-7 rounded-lg bg-emerald-100/80 text-emerald-800 flex items-center justify-center shrink-0 font-bold text-xs">
+                                                        👥
+                                                    </div>
+                                                    <div class="min-w-0 flex-1 pr-2">
+                                                        <span
+                                                            class="font-bold text-gray-800 text-xs sm:text-sm block truncate"
+                                                            :title="g.subject" x-text="g.subject"></span>
+                                                        <div class="flex items-center gap-2 mt-0.5">
+                                                            <span
+                                                                class="text-[10px] text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded font-medium"
+                                                                x-text="g.size ? g.size + ' anggota' : 'Grup Aktif'"></span>
+                                                            <span
+                                                                class="text-[10px] text-gray-400 font-mono hidden md:inline truncate"
+                                                                x-text="g.id"></span>
+                                                        </div>
                                                     </div>
                                                 </label>
 
-                                                <div class="flex items-center gap-1.5 shrink-0">
+                                                <div
+                                                    class="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
                                                     <!-- Tombol 1: Tambahkan Grup Langsung ke Target (Kirim Pesan ke Grup) -->
                                                     <button type="button" @click="addGroupToTarget(g)"
-                                                        class="text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-lg transition flex items-center gap-1"
-                                                        title="Tambahkan grup ini langsung ke daftar target pengiriman">
-                                                        <span>+ Pilih Grup</span>
+                                                        class="text-[11px] font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2 py-1 rounded-lg transition inline-flex items-center gap-1 shadow-2xs whitespace-nowrap"
+                                                        title="Tambahkan grup ini ke daftar target blast (kirim langsung ke grup)">
+                                                        <svg class="w-3 h-3 text-emerald-600" fill="none"
+                                                            stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                                        </svg>
                                                     </button>
-                                                    <!-- Tombol 2: Tarik Nomor Anggota Grup (Japri) -->
+
+                                                    <!-- Tombol 2: Simpan Kontak Anggota ke Buku Alamat -->
+                                                    <button type="button" @click="saveGroupToAddressBook(g)"
+                                                        :disabled="isSavingAddressBook === g.id"
+                                                        class="text-[11px] font-semibold text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2 py-1 rounded-lg transition inline-flex items-center gap-1 disabled:opacity-50 shadow-2xs whitespace-nowrap"
+                                                        title="Ekstrak seluruh nomor kontak anggota grup ini dan simpan ke Buku Alamat">
+                                                        <svg x-show="isSavingAddressBook !== g.id"
+                                                            class="w-3 h-3 text-blue-600 shrink-0" fill="none"
+                                                            stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2"
+                                                                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253">
+                                                            </path>
+                                                        </svg>
+                                                        <svg x-show="isSavingAddressBook === g.id"
+                                                            style="display: none;"
+                                                            class="w-3 h-3 animate-spin text-blue-600 shrink-0"
+                                                            fill="none" viewBox="0 0 24 24">
+                                                            <circle class="opacity-25" cx="12" cy="12"
+                                                                r="10" stroke="currentColor" stroke-width="4">
+                                                            </circle>
+                                                            <path class="opacity-75" fill="currentColor"
+                                                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                                            </path>
+                                                        </svg>
+                                                    </button>
+
+                                                    <!-- Tombol 3: Tarik Nomor Anggota Grup (Japri) -->
                                                     <button type="button" @click="extractGroupParticipants(g.id)"
                                                         :disabled="isExtractingParticipants"
-                                                        class="text-[11px] font-semibold text-gray-500 hover:text-gray-800 bg-white hover:bg-gray-50 border border-gray-200 px-2 py-1 rounded-lg transition"
-                                                        title="Tarik nomor kontak orang-orang anggota dari grup ini ke daftar target">
-                                                        📥 Anggota
+                                                        class="text-[11px] font-medium text-gray-600 hover:text-gray-900 bg-gray-50 hover:bg-gray-100 border border-gray-200 px-2 py-1 rounded-lg transition shadow-2xs whitespace-nowrap"
+                                                        title="Tarik seluruh kontak anggota grup ini ke daftar target kirim saat ini">
+                                                        📥
                                                     </button>
                                                 </div>
                                             </div>
@@ -438,7 +482,7 @@
 
                                         <template
                                             x-if="accountGroups.length > 0 && filteredAccountGroups.length === 0">
-                                            <div class="text-center py-6 text-xs text-gray-400">
+                                            <div class="text-center py-8 text-xs text-gray-400">
                                                 Tidak ada grup yang cocok dengan kata kunci "<span
                                                     x-text="groupSearch"></span>".
                                             </div>
@@ -447,10 +491,12 @@
 
                                     <!-- Multi-Action Footer -->
                                     <div
-                                        class="pt-2.5 border-t border-gray-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                        <div class="text-xs text-gray-600">
-                                            Terpilih: <strong class="text-[#128C7E]"
-                                                x-text="selectedGroupIds.length"></strong> grup
+                                        class="pt-3 border-t border-gray-200/90 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                                        <div class="text-xs text-gray-600 flex items-center gap-1.5">
+                                            <span>Terpilih:</span>
+                                            <span
+                                                class="font-bold text-[#128C7E] bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 shadow-2xs"
+                                                x-text="selectedGroupIds.length + ' grup'"></span>
                                         </div>
 
                                         <div class="flex flex-wrap items-center gap-2">
@@ -463,16 +509,41 @@
                                                     <path stroke-linecap="round" stroke-linejoin="round"
                                                         stroke-width="2" d="M12 4v16m8-8H4"></path>
                                                 </svg>
-                                                <span>+ Tambah <span
-                                                        x-text="selectedGroupIds.length > 0 ? selectedGroupIds.length + ' ' : ''"></span>Grup
-                                                    Terpilih</span>
+                                                <span>Target (<span x-text="selectedGroupIds.length"></span>
+                                                    Grup)</span>
                                             </button>
 
-                                            <!-- Action Sekunder: Tarik Kontak Anggota (Japri Orang-orang) -->
+                                            <!-- Action 2: Simpan Kontak Anggota ke Buku Alamat -->
+                                            <button type="button" @click="saveSelectedGroupsToAddressBook()"
+                                                :disabled="selectedGroupIds.length === 0 || isBulkSavingAddressBook"
+                                                class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl border border-blue-700 transition shadow-sm disabled:opacity-40 inline-flex items-center gap-1.5"
+                                                title="Tarik seluruh kontak anggota dari grup terpilih dan simpan ke Buku Alamat">
+                                                <svg x-show="!isBulkSavingAddressBook"
+                                                    class="w-3.5 h-3.5 text-blue-200" fill="none"
+                                                    stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253">
+                                                    </path>
+                                                </svg>
+                                                <svg x-show="isBulkSavingAddressBook" style="display: none;"
+                                                    class="w-3.5 h-3.5 animate-spin text-white" fill="none"
+                                                    viewBox="0 0 24 24">
+                                                    <circle class="opacity-25" cx="12" cy="12" r="10"
+                                                        stroke="currentColor" stroke-width="4"></circle>
+                                                    <path class="opacity-75" fill="currentColor"
+                                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                                    </path>
+                                                </svg>
+                                                <span
+                                                    x-text="isBulkSavingAddressBook ? 'Mengekstrak Kontak...' : 'Simpan ke Buku Alamat'"></span>
+                                            </button>
+
+                                            <!-- Action 3: Tarik Kontak Anggota (Japri Orang-orang) -->
                                             <button type="button" @click="extractGroupParticipants()"
                                                 :disabled="selectedGroupIds.length === 0 || isExtractingParticipants"
                                                 class="bg-white hover:bg-gray-50 text-gray-700 hover:text-emerald-700 text-xs font-bold px-3 py-2 rounded-xl border border-gray-200 transition shadow-2xs disabled:opacity-40 inline-flex items-center gap-1.5"
-                                                title="Tarik seluruh nomor kontak orang-orang anggota dari grup terpilih">
+                                                title="Tarik seluruh nomor kontak orang-orang anggota dari grup terpilih ke target saat ini">
                                                 <svg x-show="!isExtractingParticipants"
                                                     class="w-3.5 h-3.5 text-gray-500" fill="none"
                                                     stroke="currentColor" viewBox="0 0 24 24">
@@ -491,7 +562,7 @@
                                                     </path>
                                                 </svg>
                                                 <span
-                                                    x-text="isExtractingParticipants ? 'Mengekstrak Anggota...' : '📥 Tarik Anggota (Japri)'"></span>
+                                                    x-text="isExtractingParticipants ? 'Mengekstrak Anggota...' : 'Tarik Kontak (Japri)'"></span>
                                             </button>
                                         </div>
                                     </div>
@@ -966,13 +1037,29 @@
                         <h3 class="text-xl font-bold text-gray-800">📖 Buku Alamat (Grup Kontak)</h3>
                         <p class="text-sm text-gray-500 mt-1">Kelola database nomor target Anda dengan mudah.</p>
                     </div>
-                    <button @click="openContactModal(null)"
-                        class="bg-[#128C7E] hover:bg-[#075e54] text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md shadow-emerald-500/20 transition-all flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4">
-                            </path>
-                        </svg>Tambah Grup
-                    </button>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <!-- Tombol Pilih dari Grup WhatsApp -->
+                        <button type="button" @click="openWaGroupPickerModal()"
+                            class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-4 py-2.5 rounded-xl text-sm font-bold shadow-2xs transition-all flex items-center gap-2">
+                            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
+                                </path>
+                            </svg>
+                            Pilih dari Grup WhatsApp
+                        </button>
+
+                        <!-- Tombol Tambah Manual -->
+                        <button @click="openContactModal(null)"
+                            class="bg-[#128C7E] hover:bg-[#075e54] text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md shadow-emerald-500/20 transition-all flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 4v16m8-8H4">
+                                </path>
+                            </svg>Tambah Grup
+                        </button>
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -1043,7 +1130,19 @@
                         <template x-if="contactId"><input type="hidden" name="_method" value="PUT"></template>
 
                         <div class="mb-5">
-                            <label class="block text-sm font-bold text-gray-700 mb-2">Nama Grup</label>
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="block text-sm font-bold text-gray-700">Nama Grup</label>
+                                <button type="button" @click="showContactModal = false; openWaGroupPickerModal()"
+                                    class="text-xs text-[#128C7E] hover:text-[#075e54] font-semibold flex items-center gap-1">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
+                                        </path>
+                                    </svg>
+                                    Pilih dari Grup WhatsApp
+                                </button>
+                            </div>
                             <input type="text" name="nama_grup" x-model="contactNamaGrup"
                                 placeholder="misal: Pelanggan VIP Bulan Agustus"
                                 class="w-full border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 rounded-xl px-4 py-3 bg-gray-50 focus:bg-white transition-colors shadow-sm"
@@ -1128,6 +1227,157 @@
                 </div>
             </div>
 
+            <!-- MODAL PILIH GRUP WHATSAPP KE BUKU ALAMAT -->
+            <div x-show="showWaGroupPickerModal"
+                class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/70 backdrop-blur-sm"
+                style="display: none;">
+                <div
+                    class="bg-white p-6 sm:p-8 rounded-3xl shadow-2xl w-full max-w-2xl transform transition-all max-h-[90vh] flex flex-col">
+                    <div class="flex items-center justify-between pb-4 border-b border-gray-100 shrink-0">
+                        <div class="flex items-center gap-3">
+                            <span
+                                class="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#128C7E] to-[#075e54] text-white flex items-center justify-center shadow-md shrink-0">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
+                                    </path>
+                                </svg>
+                            </span>
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-800">Pilih Grup WhatsApp untuk Buku Alamat</h3>
+                                <p class="text-xs text-gray-500">Instance: <strong class="text-[#128C7E]"
+                                        x-text="userInstance"></strong> &bull; Seluruh kontak anggota di dalam grup
+                                    akan diekstrak dan disimpan otomatis ke Buku Alamat.</p>
+                            </div>
+                        </div>
+                        <button type="button" @click="showWaGroupPickerModal = false"
+                            class="text-gray-400 hover:text-gray-600 rounded-lg p-1 text-2xl font-bold leading-none">&times;</button>
+                    </div>
+
+                    <!-- Search & Controls Bar -->
+                    <div
+                        class="pt-4 pb-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shrink-0">
+                        <div class="relative flex-1">
+                            <input type="text" x-model="groupSearch" placeholder="Cari nama grup WhatsApp..."
+                                class="w-full text-xs pl-8 pr-3 py-2 rounded-xl border border-gray-200 focus:border-[#128C7E] focus:ring focus:ring-[#128C7E]/20 bg-gray-50/70">
+                            <svg class="w-4 h-4 text-gray-400 absolute left-2.5 top-2.5" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <button type="button" @click="selectAllAccountGroups(true)"
+                                class="text-xs text-[#128C7E] hover:underline font-semibold">Pilih Semua</button>
+                            <span class="text-gray-300">|</span>
+                            <button type="button" @click="selectAllAccountGroups(false)"
+                                class="text-xs text-gray-500 hover:underline">Batal Pilih</button>
+                            <span class="text-gray-300">|</span>
+                            <button type="button" @click="fetchAccountGroups(true)" :disabled="isLoadingGroups"
+                                class="text-xs text-blue-600 hover:text-blue-800 font-semibold inline-flex items-center gap-1">
+                                <svg class="w-3.5 h-3.5" :class="{ 'animate-spin': isLoadingGroups }" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                                    </path>
+                                </svg>
+                                Segarkan
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Scrollable Groups List -->
+                    <div class="flex-1 overflow-y-auto space-y-2 pr-1 my-2 min-h-[240px]">
+                        <template x-if="isLoadingGroups">
+                            <div
+                                class="py-12 text-center text-xs text-gray-500 flex flex-col items-center justify-center gap-2">
+                                <svg class="w-6 h-6 animate-spin text-[#128C7E]" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10"
+                                        stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor"
+                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                    </path>
+                                </svg>
+                                <span>Memuat daftar grup WhatsApp dari instance...</span>
+                            </div>
+                        </template>
+
+                        <template x-if="!isLoadingGroups && accountGroups.length === 0">
+                            <div class="py-12 text-center text-xs text-gray-400">
+                                Belum ada grup yang terbaca. Klik tombol <strong>Segarkan</strong> di atas untuk memuat
+                                grup dari WhatsApp.
+                            </div>
+                        </template>
+
+                        <template x-if="accountGroups.length > 0 && filteredAccountGroups.length === 0">
+                            <div class="py-8 text-center text-xs text-gray-400">
+                                Tidak ada grup yang cocok dengan pencarian "<span x-text="groupSearch"></span>".
+                            </div>
+                        </template>
+
+                        <template x-for="g in filteredAccountGroups" :key="g.id">
+                            <div
+                                class="flex items-center justify-between p-2.5 sm:p-3 rounded-xl hover:bg-emerald-50/40 border border-gray-100 transition-colors gap-2">
+                                <label class="flex items-center gap-2.5 min-w-0 cursor-pointer flex-1">
+                                    <input type="checkbox" :value="g.id" x-model="selectedGroupIds"
+                                        class="w-4 h-4 text-[#128C7E] rounded border-gray-300 focus:ring-[#128C7E]">
+                                    <div class="min-w-0 flex-1 pr-2">
+                                        <span class="font-bold text-gray-800 text-xs sm:text-sm truncate block"
+                                            :title="g.subject" x-text="g.subject"></span>
+                                        <span class="text-[11px] text-gray-400 block"
+                                            x-text="g.size ? g.size + ' anggota' : 'Grup Aktif'"></span>
+                                    </div>
+                                </label>
+                                <button type="button" @click="saveGroupToAddressBook(g)"
+                                    :disabled="isSavingAddressBook === g.id"
+                                    class="text-xs font-semibold text-white bg-[#128C7E] hover:bg-[#0e6b60] px-3 py-1.5 rounded-lg transition shrink-0 shadow-xs disabled:opacity-50 inline-flex items-center gap-1.5 whitespace-nowrap"
+                                    title="Ekstrak seluruh nomor kontak anggota grup ini dan simpan ke Buku Alamat">
+                                    <svg x-show="isSavingAddressBook === g.id" class="w-3.5 h-3.5 animate-spin"
+                                        fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10"
+                                            stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor"
+                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                        </path>
+                                    </svg>
+                                    <span
+                                        x-text="isSavingAddressBook === g.id ? 'Mengekstrak...' : '+ Buku Alamat'"></span>
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Modal Footer -->
+                    <div
+                        class="pt-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+                        <div class="text-xs text-gray-600">
+                            Terpilih: <strong class="text-[#128C7E]" x-text="selectedGroupIds.length"></strong> grup
+                        </div>
+                        <div class="flex items-center gap-2 w-full sm:w-auto">
+                            <button type="button" @click="showWaGroupPickerModal = false"
+                                class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 text-xs font-bold transition">
+                                Tutup
+                            </button>
+                            <button type="button" @click="saveSelectedGroupsToAddressBook()"
+                                :disabled="selectedGroupIds.length === 0 || isBulkSavingAddressBook"
+                                class="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-[#128C7E] hover:bg-[#075e54] text-white text-xs font-bold transition shadow-md disabled:opacity-40 inline-flex items-center justify-center gap-1.5"
+                                title="Ekstrak kontak anggota dari seluruh grup terpilih dan simpan ke Buku Alamat">
+                                <svg x-show="isBulkSavingAddressBook" class="w-3.5 h-3.5 animate-spin" fill="none"
+                                    viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10"
+                                        stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor"
+                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                    </path>
+                                </svg>
+                                <span
+                                    x-text="isBulkSavingAddressBook ? 'Mengekstrak Kontak...' : '📖 Simpan Kontak Anggota ke Buku Alamat'"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- MODAL TAMBAH/EDIT TEMPLATE -->
             <div x-show="showTemplateModal"
                 class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/70 backdrop-blur-sm"
@@ -1138,7 +1388,8 @@
                     <form :action="templateId ? `/wa/template/${templateId}` : '{{ route('wa.template.store') }}'"
                         method="POST">
                         @csrf
-                        <template x-if="templateId"><input type="hidden" name="_method" value="PUT"></template>
+                        <template x-if="templateId"><input type="hidden" name="_method"
+                                value="PUT"></template>
 
                         <div class="mb-5">
                             <label class="block text-sm font-bold text-gray-700 mb-2">Judul Template</label>
@@ -1247,9 +1498,10 @@
                                             class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-[#128C7E] bg-emerald-50 hover:bg-[#128C7E] hover:text-white transition border border-emerald-100">
                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
                                                 viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                    stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                    stroke-width="2"
                                                     d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z">
                                                 </path>
                                             </svg>
@@ -1458,6 +1710,8 @@
                 groupSearch: '',
                 isLoadingGroups: false,
                 isExtractingParticipants: false,
+                isSavingAddressBook: null,
+                isBulkSavingAddressBook: false,
                 groupFetchMessage: '',
 
                 showEmoji: false,
@@ -1484,6 +1738,7 @@
 
                 // Modal Grup Kontak (Buku Alamat)
                 showContactModal: false,
+                showWaGroupPickerModal: false,
                 contactId: null,
                 contactNamaGrup: '',
                 contactNomor: '',
@@ -1713,6 +1968,107 @@
                         alert(this.groupFetchMessage);
                     } finally {
                         this.isExtractingParticipants = false;
+                    }
+                },
+
+                openWaGroupPickerModal() {
+                    this.showWaGroupPickerModal = true;
+                    if (this.accountGroups.length === 0 && !this.isLoadingGroups) {
+                        this.fetchAccountGroups();
+                    }
+                },
+
+                async saveGroupToAddressBook(group) {
+                    this.isSavingAddressBook = group.id;
+                    this.groupFetchMessage =
+                        `Sedang mengekstrak kontak anggota grup "${group.subject}" dan menyimpan ke Buku Alamat...`;
+                    try {
+                        let res = await fetch('{{ route('wa.contact.store') }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            },
+                            body: JSON.stringify({
+                                group_jid: group.id,
+                                nama_grup: group.subject,
+                                nomor: `${group.subject} - ${group.id}`
+                            })
+                        });
+                        let data = await res.json();
+                        if (data.success) {
+                            let msg = data.message ||
+                                `Berhasil menyimpan grup "${group.subject}" beserta kontak anggotanya ke Buku Alamat!`;
+                            this.groupFetchMessage = msg;
+                            alert(msg +
+                                '\nHalaman akan dimuat ulang agar langsung tampil di Buku Alamat.'
+                            );
+                            window.location.hash = 'section-kontak';
+                            window.location.reload();
+                        } else {
+                            this.groupFetchMessage = data.message ||
+                                'Gagal menyimpan ke Buku Alamat.';
+                            alert(this.groupFetchMessage);
+                        }
+                    } catch (e) {
+                        console.error('Error saving group to address book:', e);
+                        this.groupFetchMessage =
+                            'Terjadi kesalahan koneksi saat menyimpan ke Buku Alamat.';
+                    } finally {
+                        this.isSavingAddressBook = null;
+                    }
+                },
+
+                async saveSelectedGroupsToAddressBook() {
+                    if (this.selectedGroupIds.length === 0) return;
+                    let selectedGroups = this.accountGroups.filter(g => this.selectedGroupIds
+                        .includes(g.id));
+                    if (selectedGroups.length === 0) return;
+
+                    this.isBulkSavingAddressBook = true;
+                    this.groupFetchMessage =
+                        `Sedang mengekstrak kontak anggota dari ${selectedGroups.length} grup ke Buku Alamat...`;
+
+                    let payload = selectedGroups.map(g => ({
+                        group_jid: g.id,
+                        nama_grup: g.subject,
+                        nomor: `${g.subject} - ${g.id}`
+                    }));
+
+                    try {
+                        let res = await fetch('{{ route('wa.contact.store') }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            },
+                            body: JSON.stringify({
+                                groups: payload
+                            })
+                        });
+                        let data = await res.json();
+                        if (data.success) {
+                            let msg = data.message ||
+                                `Berhasil menyimpan ${selectedGroups.length} grup beserta kontak anggotanya ke Buku Alamat!`;
+                            this.groupFetchMessage = msg;
+                            alert(msg +
+                                '\nHalaman akan dimuat ulang agar langsung tampil di Buku Alamat.'
+                            );
+                            window.location.hash = 'section-kontak';
+                            window.location.reload();
+                        } else {
+                            this.groupFetchMessage = data.message ||
+                                'Gagal menyimpan grup ke Buku Alamat.';
+                            alert(this.groupFetchMessage);
+                        }
+                    } catch (e) {
+                        console.error('Error bulk saving to address book:', e);
+                        this.groupFetchMessage =
+                            'Terjadi kesalahan koneksi saat menyimpan grup ke Buku Alamat.';
+                    } finally {
+                        this.isBulkSavingAddressBook = false;
                     }
                 },
 

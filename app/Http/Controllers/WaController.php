@@ -1011,36 +1011,192 @@ class WaController extends Controller
     }
 
     // ================= FITUR GRUP KONTAK =================
-    public function storeContactGroup(Request $request): RedirectResponse
+    public function storeContactGroup(Request $request): RedirectResponse|JsonResponse
     {
-        $validated = $request->validate([
-            'nama_grup' => 'required|string|max:255',
-            'nomor' => 'required|string',
-        ]);
-        $validated['user_id'] = Auth::id();
+        $userId = Auth::id();
+        $user = Auth::user();
+        $evoService = $this->getEvoService($user);
 
-        $rawLines = array_filter(array_map('trim', explode("\n", str_replace("\r", '', $validated['nomor']))));
-        $normalizedLines = [];
-        foreach ($rawLines as $line) {
-            $parsed = $this->parseContactLine($line);
-            if (! empty($parsed['nomor'])) {
-                $normalizedLines[] = ! empty($parsed['nama']) ? "{$parsed['nama']} - {$parsed['nomor']}" : $parsed['nomor'];
+        // Dukungan simpan banyak grup sekaligus dari daftar grup WhatsApp
+        if ($request->has('groups') && is_array($request->groups)) {
+            $saved = [];
+            $totalContactsAdded = 0;
+            $failedGroups = [];
+
+            foreach ($request->groups as $item) {
+                $nama = trim((string) ($item['nama_grup'] ?? ''));
+                $jid = trim((string) ($item['group_jid'] ?? ''));
+                $nomor = trim((string) ($item['nomor'] ?? ''));
+
+                if (! $jid && str_contains($nomor, '@g.us')) {
+                    if (preg_match('/([0-9\-]+@g\.us)/', $nomor, $m)) {
+                        $jid = $m[1];
+                    }
+                }
+
+                $memberNumbers = [];
+
+                if ($jid) {
+                    $groupInfo = $evoService->fetchGroupParticipants($jid);
+                    if ($groupInfo['success'] && ! empty($groupInfo['participants'])) {
+                        $memberNumbers = $groupInfo['participants'];
+                        if (empty($nama) && ! empty($groupInfo['subject'])) {
+                            $nama = $groupInfo['subject'];
+                        }
+                    } else {
+                        $failedGroups[] = $nama ?: $jid;
+                    }
+                }
+
+                if (empty($memberNumbers) && ! empty($nomor)) {
+                    $rawLines = array_filter(array_map('trim', explode("\n", str_replace("\r", '', $nomor))));
+                    foreach ($rawLines as $line) {
+                        $parsed = $this->parseContactLine($line);
+                        if (! empty($parsed['nomor'])) {
+                            $memberNumbers[] = ! empty($parsed['nama']) ? "{$parsed['nama']} - {$parsed['nomor']}" : $parsed['nomor'];
+                        }
+                    }
+                }
+
+                if ($nama === '' || empty($memberNumbers)) {
+                    continue;
+                }
+
+                $cleanNomor = implode("\n", array_unique($memberNumbers));
+                $countInGroup = count(array_unique($memberNumbers));
+                $totalContactsAdded += $countInGroup;
+
+                $existing = WaContactGroup::where('user_id', $userId)
+                    ->where('nama_grup', $nama)
+                    ->first();
+
+                if ($existing) {
+                    $existingLines = array_filter(array_map('trim', explode("\n", str_replace("\r", '', $existing->nomor))));
+                    $merged = array_unique(array_merge($existingLines, $memberNumbers));
+                    $existing->update(['nomor' => implode("\n", $merged)]);
+                    $group = $existing;
+                } else {
+                    $group = WaContactGroup::create([
+                        'user_id' => $userId,
+                        'nama_grup' => $nama,
+                        'nomor' => $cleanNomor,
+                    ]);
+                }
+                $saved[] = $group;
+            }
+
+            ActivityLog::record(
+                action: 'contact_group_create',
+                description: 'Menyimpan '.count($saved)." grup WhatsApp ({$totalContactsAdded} kontak anggota) ke Buku Alamat.",
+                properties: ['total_grup' => count($saved), 'total_kontak' => $totalContactsAdded]
+            );
+
+            $msg = count($saved)." grup WhatsApp berhasil disimpan ke Buku Alamat dengan total {$totalContactsAdded} kontak anggota!";
+            if (! empty($failedGroups)) {
+                $msg .= ' (Gagal memuat peserta dari '.count($failedGroups).' grup)';
+            }
+
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $msg,
+                    'count' => count($saved),
+                    'total_contacts' => $totalContactsAdded,
+                ]);
+            }
+
+            return back()->with('success', $msg);
+        }
+
+        // Simpan satu grup kontak
+        $jid = trim((string) ($request->group_jid ?? ''));
+        $nomor = trim((string) ($request->nomor ?? ''));
+
+        if (! $jid && str_contains($nomor, '@g.us')) {
+            if (preg_match('/([0-9\-]+@g\.us)/', $nomor, $m)) {
+                $jid = $m[1];
             }
         }
-        $validated['nomor'] = implode("\n", array_unique($normalizedLines));
 
-        $group = WaContactGroup::create($validated);
+        $memberNumbers = [];
 
-        $lineCount = count(array_filter(explode("\n", str_replace("\r", '', $group->nomor))));
+        if ($jid) {
+            $groupInfo = $evoService->fetchGroupParticipants($jid);
+            if ($groupInfo['success'] && ! empty($groupInfo['participants'])) {
+                $memberNumbers = $groupInfo['participants'];
+                $namaGrup = $request->filled('nama_grup') ? trim($request->nama_grup) : $groupInfo['subject'];
+            } else {
+                $errMsg = $groupInfo['message'] ?? 'Gagal mengambil nomor kontak anggota dari grup WhatsApp. Pastikan akun WA Anda adalah anggota aktif grup ini.';
+                if ($request->expectsJson() || $request->ajax()) {
+                    return response()->json(['success' => false, 'message' => $errMsg], 422);
+                }
+
+                return back()->withErrors(['nomor' => $errMsg]);
+            }
+        } else {
+            $validated = $request->validate([
+                'nama_grup' => 'required|string|max:255',
+                'nomor' => 'required|string',
+            ]);
+            $namaGrup = $validated['nama_grup'];
+
+            $rawLines = array_filter(array_map('trim', explode("\n", str_replace("\r", '', $validated['nomor']))));
+            foreach ($rawLines as $line) {
+                $parsed = $this->parseContactLine($line);
+                if (! empty($parsed['nomor'])) {
+                    $memberNumbers[] = ! empty($parsed['nama']) ? "{$parsed['nama']} - {$parsed['nomor']}" : $parsed['nomor'];
+                }
+            }
+        }
+
+        if (empty($namaGrup)) {
+            $namaGrup = 'Grup WhatsApp';
+        }
+
+        $cleanNomor = implode("\n", array_unique($memberNumbers));
+        $lineCount = count(array_unique($memberNumbers));
+
+        $existing = WaContactGroup::where('user_id', $userId)
+            ->where('nama_grup', $namaGrup)
+            ->first();
+
+        if ($existing) {
+            $existingLines = array_filter(array_map('trim', explode("\n", str_replace("\r", '', $existing->nomor))));
+            $merged = array_unique(array_merge($existingLines, $memberNumbers));
+            $existing->update(['nomor' => implode("\n", $merged)]);
+            $group = $existing;
+            $lineCount = count($merged);
+        } else {
+            $group = WaContactGroup::create([
+                'user_id' => $userId,
+                'nama_grup' => $namaGrup,
+                'nomor' => $cleanNomor,
+            ]);
+        }
 
         ActivityLog::record(
             action: 'contact_group_create',
-            description: "Membuat grup kontak '{$group->nama_grup}' berisi {$lineCount} kontak.",
+            description: "Menyimpan grup '{$group->nama_grup}' berisi {$lineCount} kontak anggota ke Buku Alamat.",
             subject: $group,
             properties: ['total_nomor' => $lineCount]
         );
 
-        return back()->with('success', 'Grup Kontak berhasil disimpan!');
+        $msg = "Grup '{$group->nama_grup}' berhasil disimpan ke Buku Alamat berisi {$lineCount} kontak anggota!";
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => $msg,
+                'group' => [
+                    'id' => $group->id,
+                    'nama_grup' => $group->nama_grup,
+                    'nomor' => $group->nomor,
+                    'count' => $lineCount,
+                ],
+            ]);
+        }
+
+        return back()->with('success', $msg);
     }
 
     public function updateContactGroup(Request $request, int $id): RedirectResponse
