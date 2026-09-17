@@ -50,42 +50,42 @@ class WaController extends Controller
 
         $activeCampaigns = WaBlastCampaign::with('user')
             ->whereIn('status', ['pending', 'processing'])
-            ->when(! $isSuperAdmin, fn ($q) => $q->where('user_id', $user->id))
+            ->when(! $isSuperAdmin, fn($q) => $q->where('user_id', $user->id))
             ->latest()
             ->get();
 
         $totalRecipients = $isSuperAdmin
             ? WaBlastRecipient::count()
-            : WaBlastRecipient::whereHas('campaign', fn ($q) => $q->where('user_id', $user->id))->count();
+            : WaBlastRecipient::whereHas('campaign', fn($q) => $q->where('user_id', $user->id))->count();
 
         $successRecipients = $isSuperAdmin
             ? WaBlastRecipient::where('status', 'sent')->count()
-            : WaBlastRecipient::where('status', 'sent')->whereHas('campaign', fn ($q) => $q->where('user_id', $user->id))->count();
+            : WaBlastRecipient::where('status', 'sent')->whereHas('campaign', fn($q) => $q->where('user_id', $user->id))->count();
 
         $failedRecipients = $isSuperAdmin
             ? WaBlastRecipient::where('status', 'failed')->count()
-            : WaBlastRecipient::where('status', 'failed')->whereHas('campaign', fn ($q) => $q->where('user_id', $user->id))->count();
+            : WaBlastRecipient::where('status', 'failed')->whereHas('campaign', fn($q) => $q->where('user_id', $user->id))->count();
 
         $pendingRecipients = $isSuperAdmin
             ? WaBlastRecipient::whereIn('status', ['pending', 'sending'])->count()
-            : WaBlastRecipient::whereIn('status', ['pending', 'sending'])->whereHas('campaign', fn ($q) => $q->where('user_id', $user->id))->count();
+            : WaBlastRecipient::whereIn('status', ['pending', 'sending'])->whereHas('campaign', fn($q) => $q->where('user_id', $user->id))->count();
 
         $totalGroups = $isSuperAdmin
             ? WaContactGroup::count()
-            : WaContactGroup::where(fn ($q) => $q->where('user_id', $user->id)->orWhereNull('user_id'))->count();
+            : WaContactGroup::where(fn($q) => $q->where('user_id', $user->id)->orWhereNull('user_id'))->count();
 
         $totalTemplates = $isSuperAdmin
             ? WaTemplate::count()
-            : WaTemplate::where(fn ($q) => $q->where('user_id', $user->id)->orWhereNull('user_id'))->count();
+            : WaTemplate::where(fn($q) => $q->where('user_id', $user->id)->orWhereNull('user_id'))->count();
 
         $recentCampaigns = WaBlastCampaign::with('user')
-            ->when(! $isSuperAdmin, fn ($q) => $q->where('user_id', $user->id))
+            ->when(! $isSuperAdmin, fn($q) => $q->where('user_id', $user->id))
             ->latest()
             ->take(6)
             ->get();
 
         $recentLogs = ActivityLog::with('user')
-            ->when(! $isSuperAdmin, fn ($q) => $q->where('user_id', $user->id))
+            ->when(! $isSuperAdmin, fn($q) => $q->where('user_id', $user->id))
             ->latest()
             ->take(6)
             ->get();
@@ -151,7 +151,7 @@ class WaController extends Controller
 
         $name = strtolower(trim($validated['wa_instance_name']));
 
-        if ($user->isInstanceTakenByOther($name)) {
+        if (! $user->isSuperAdmin() && $user->isInstanceTakenByOther($name)) {
             return back()->withErrors([
                 'wa_instance_name' => "Nama WhatsApp Instance '{$name}' sudah digunakan oleh akun pengguna lain. Silakan gunakan nama instance yang unik.",
             ]);
@@ -299,20 +299,20 @@ class WaController extends Controller
         $user = Auth::user();
         $isSuperAdmin = $user->isSuperAdmin();
 
-        $templates = WaTemplate::when(! $isSuperAdmin, fn ($q) => $q->where(fn ($sub) => $sub->where('user_id', $user->id)->orWhereNull('user_id')))
+        $templates = WaTemplate::when(! $isSuperAdmin, fn($q) => $q->where(fn($sub) => $sub->where('user_id', $user->id)->orWhereNull('user_id')))
             ->latest()
             ->get();
 
-        $contactGroups = WaContactGroup::when(! $isSuperAdmin, fn ($q) => $q->where(fn ($sub) => $sub->where('user_id', $user->id)->orWhereNull('user_id')))
+        $contactGroups = WaContactGroup::when(! $isSuperAdmin, fn($q) => $q->where(fn($sub) => $sub->where('user_id', $user->id)->orWhereNull('user_id')))
             ->latest()
             ->get();
 
-        $campaigns = WaBlastCampaign::when(! $isSuperAdmin, fn ($q) => $q->where('user_id', $user->id))
+        $campaigns = WaBlastCampaign::when(! $isSuperAdmin, fn($q) => $q->where('user_id', $user->id))
             ->latest()
             ->take(10)
             ->get();
 
-        $logs = WaBlastLog::when(! $isSuperAdmin, fn ($q) => $q->where('user_id', $user->id))
+        $logs = WaBlastLog::when(! $isSuperAdmin, fn($q) => $q->where('user_id', $user->id))
             ->latest()
             ->take(10)
             ->get();
@@ -357,7 +357,7 @@ class WaController extends Controller
             $base64Data = preg_replace('#^data:image/\w+;base64,#i', '', $base64Image);
             $decoded = base64_decode($base64Data);
             if ($decoded !== false) {
-                $fileName = 'wa_blasts/'.uniqid('blast_', true).'.jpg';
+                $fileName = 'wa_blasts/' . uniqid('blast_', true) . '.jpg';
                 Storage::disk('public')->put($fileName, $decoded);
                 $mediaPath = $fileName;
             }
@@ -369,7 +369,7 @@ class WaController extends Controller
         // Buat Kampanye Blast
         $campaign = WaBlastCampaign::create([
             'user_id' => Auth::id(),
-            'judul' => 'Blast - '.now()->translatedFormat('d M Y H:i'),
+            'judul' => 'Blast - ' . now()->translatedFormat('d M Y H:i'),
             'pesan' => $pesanTemplate,
             'media_path' => $mediaPath,
             'total_target' => count($lines),
@@ -631,7 +631,7 @@ class WaController extends Controller
                 $campaign->increment('failed_count');
             }
         } catch (\Throwable $e) {
-            Log::error("Error sending WA to {$cleanNumber}: ".$e->getMessage());
+            Log::error("Error sending WA to {$cleanNumber}: " . $e->getMessage());
             $recipient->update([
                 'status' => 'failed',
                 'sent_at' => now(),
@@ -760,7 +760,7 @@ class WaController extends Controller
 
         $newCampaign = WaBlastCampaign::create([
             'user_id' => Auth::id(),
-            'judul' => 'Retry Blast #'.$originalCampaign->id.' - '.now()->translatedFormat('d M H:i'),
+            'judul' => 'Retry Blast #' . $originalCampaign->id . ' - ' . now()->translatedFormat('d M H:i'),
             'pesan' => $originalCampaign->pesan,
             'media_path' => $originalCampaign->media_path,
             'total_target' => $failedRecipients->count(),
@@ -834,7 +834,7 @@ class WaController extends Controller
                 }
             }
         } catch (\Throwable $e) {
-            Log::warning('Auto-queue worker trigger notice: '.$e->getMessage());
+            Log::warning('Auto-queue worker trigger notice: ' . $e->getMessage());
         }
     }
 
@@ -1125,7 +1125,7 @@ class WaController extends Controller
         if ($delimiter !== null) {
             $cells = array_values(array_filter(array_map(function ($c) {
                 return trim($c, " \t\n\r\0\x0B\"'");
-            }, explode($delimiter, $trimmed)), fn ($c) => $c !== ''));
+            }, explode($delimiter, $trimmed)), fn($c) => $c !== ''));
 
             $phoneIndex = -1;
             foreach ($cells as $idx => $cell) {
@@ -1170,7 +1170,7 @@ class WaController extends Controller
         if (empty($rawPhone)) {
             if (preg_match('/^(.*?)\(([\+?\d\s\-\.]{8,20})\)(.*?)$/', $trimmed, $m)) {
                 $rawPhone = trim($m[2]);
-                $nama = trim($m[1].' '.$m[3]);
+                $nama = trim($m[1] . ' ' . $m[3]);
             } elseif (preg_match('/^([^\:\-]+)[\:\-]\s*([\+?\d\s\-\.]{8,20})$/', $trimmed, $m)) {
                 $rawPhone = trim($m[2]);
                 $nama = trim($m[1]);
@@ -1179,7 +1179,7 @@ class WaController extends Controller
                 $nama = trim($m[2]);
             } elseif (preg_match('/^(.*?)((?:\+?62|0|8|9)\d[\d\s\-\.]{6,16}\d)(.*?)$/', $trimmed, $m)) {
                 $rawPhone = trim($m[2]);
-                $nama = trim($m[1].' '.$m[3]);
+                $nama = trim($m[1] . ' ' . $m[3]);
             }
         }
 

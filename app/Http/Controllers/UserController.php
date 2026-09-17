@@ -60,12 +60,17 @@ class UserController extends Controller
             $allowedRoles[] = 'superadmin';
         }
 
+        $waInstanceRules = ['nullable', 'string', 'alpha_dash', 'max:50'];
+        if (! $currentUser->isSuperAdmin()) {
+            $waInstanceRules[] = 'unique:users,wa_instance_name';
+        }
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'alpha_dash', 'max:50', 'unique:users,username'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'role' => ['required', 'string', Rule::in($allowedRoles)],
-            'wa_instance_name' => ['nullable', 'string', 'alpha_dash', 'max:50', 'unique:users,wa_instance_name'],
+            'wa_instance_name' => $waInstanceRules,
             'password' => ['required', 'string', Password::defaults()],
         ]);
 
@@ -111,12 +116,17 @@ class UserController extends Controller
             $allowedRoles[] = 'superadmin';
         }
 
+        $waInstanceRules = ['nullable', 'string', 'alpha_dash', 'max:50'];
+        if (! $currentUser->isSuperAdmin()) {
+            $waInstanceRules[] = Rule::unique('users', 'wa_instance_name')->ignore($user->id);
+        }
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'alpha_dash', 'max:50', Rule::unique('users', 'username')->ignore($user->id)],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'role' => ['required', 'string', Rule::in($allowedRoles)],
-            'wa_instance_name' => ['nullable', 'string', 'alpha_dash', 'max:50', Rule::unique('users', 'wa_instance_name')->ignore($user->id)],
+            'wa_instance_name' => $waInstanceRules,
             'password' => ['nullable', 'string', Password::defaults()],
         ]);
 
