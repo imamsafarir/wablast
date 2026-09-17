@@ -50,42 +50,42 @@ class WaController extends Controller
 
         $activeCampaigns = WaBlastCampaign::with('user')
             ->whereIn('status', ['pending', 'processing'])
-            ->when(! $isSuperAdmin, fn($q) => $q->where('user_id', $user->id))
+            ->when(! $isSuperAdmin, fn ($q) => $q->where('user_id', $user->id))
             ->latest()
             ->get();
 
         $totalRecipients = $isSuperAdmin
             ? WaBlastRecipient::count()
-            : WaBlastRecipient::whereHas('campaign', fn($q) => $q->where('user_id', $user->id))->count();
+            : WaBlastRecipient::whereHas('campaign', fn ($q) => $q->where('user_id', $user->id))->count();
 
         $successRecipients = $isSuperAdmin
             ? WaBlastRecipient::where('status', 'sent')->count()
-            : WaBlastRecipient::where('status', 'sent')->whereHas('campaign', fn($q) => $q->where('user_id', $user->id))->count();
+            : WaBlastRecipient::where('status', 'sent')->whereHas('campaign', fn ($q) => $q->where('user_id', $user->id))->count();
 
         $failedRecipients = $isSuperAdmin
             ? WaBlastRecipient::where('status', 'failed')->count()
-            : WaBlastRecipient::where('status', 'failed')->whereHas('campaign', fn($q) => $q->where('user_id', $user->id))->count();
+            : WaBlastRecipient::where('status', 'failed')->whereHas('campaign', fn ($q) => $q->where('user_id', $user->id))->count();
 
         $pendingRecipients = $isSuperAdmin
             ? WaBlastRecipient::whereIn('status', ['pending', 'sending'])->count()
-            : WaBlastRecipient::whereIn('status', ['pending', 'sending'])->whereHas('campaign', fn($q) => $q->where('user_id', $user->id))->count();
+            : WaBlastRecipient::whereIn('status', ['pending', 'sending'])->whereHas('campaign', fn ($q) => $q->where('user_id', $user->id))->count();
 
         $totalGroups = $isSuperAdmin
             ? WaContactGroup::count()
-            : WaContactGroup::where(fn($q) => $q->where('user_id', $user->id)->orWhereNull('user_id'))->count();
+            : WaContactGroup::where(fn ($q) => $q->where('user_id', $user->id)->orWhereNull('user_id'))->count();
 
         $totalTemplates = $isSuperAdmin
             ? WaTemplate::count()
-            : WaTemplate::where(fn($q) => $q->where('user_id', $user->id)->orWhereNull('user_id'))->count();
+            : WaTemplate::where(fn ($q) => $q->where('user_id', $user->id)->orWhereNull('user_id'))->count();
 
         $recentCampaigns = WaBlastCampaign::with('user')
-            ->when(! $isSuperAdmin, fn($q) => $q->where('user_id', $user->id))
+            ->when(! $isSuperAdmin, fn ($q) => $q->where('user_id', $user->id))
             ->latest()
             ->take(6)
             ->get();
 
         $recentLogs = ActivityLog::with('user')
-            ->when(! $isSuperAdmin, fn($q) => $q->where('user_id', $user->id))
+            ->when(! $isSuperAdmin, fn ($q) => $q->where('user_id', $user->id))
             ->latest()
             ->take(6)
             ->get();
@@ -298,26 +298,119 @@ class WaController extends Controller
     {
         $user = Auth::user();
         $isSuperAdmin = $user->isSuperAdmin();
+        $userInstance = $user ? $user->getWaInstanceName() : null;
+        $evoService = $this->getEvoService($user);
+        $instanceState = $evoService->getConnectionState();
+        $isInstanceConnected = ($instanceState === 'open');
 
-        $templates = WaTemplate::when(! $isSuperAdmin, fn($q) => $q->where(fn($sub) => $sub->where('user_id', $user->id)->orWhereNull('user_id')))
+        $templates = WaTemplate::when(! $isSuperAdmin, fn ($q) => $q->where(fn ($sub) => $sub->where('user_id', $user->id)->orWhereNull('user_id')))
             ->latest()
             ->get();
 
-        $contactGroups = WaContactGroup::when(! $isSuperAdmin, fn($q) => $q->where(fn($sub) => $sub->where('user_id', $user->id)->orWhereNull('user_id')))
+        $contactGroups = WaContactGroup::when(! $isSuperAdmin, fn ($q) => $q->where(fn ($sub) => $sub->where('user_id', $user->id)->orWhereNull('user_id')))
             ->latest()
             ->get();
 
-        $campaigns = WaBlastCampaign::when(! $isSuperAdmin, fn($q) => $q->where('user_id', $user->id))
+        $campaigns = WaBlastCampaign::when(! $isSuperAdmin, fn ($q) => $q->where('user_id', $user->id))
             ->latest()
             ->take(10)
             ->get();
 
-        $logs = WaBlastLog::when(! $isSuperAdmin, fn($q) => $q->where('user_id', $user->id))
+        $logs = WaBlastLog::when(! $isSuperAdmin, fn ($q) => $q->where('user_id', $user->id))
             ->latest()
             ->take(10)
             ->get();
 
-        return view('wa.blast', compact('templates', 'contactGroups', 'campaigns', 'logs'));
+        return view('wa.blast', compact(
+            'templates',
+            'contactGroups',
+            'campaigns',
+            'logs',
+            'userInstance',
+            'instanceState',
+            'isInstanceConnected'
+        ));
+    }
+
+    /**
+     * Mengambil daftar grup WhatsApp asli dari nomor/instance pengguna yang sedang login
+     */
+    public function fetchAccountWaGroups(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+        $evoService = $this->getEvoService($user);
+        $refresh = $request->boolean('refresh');
+        $result = $evoService->fetchWaGroups($refresh);
+
+        return response()->json($result);
+    }
+
+    /**
+     * Mengambil daftar nomor kontak anggota dari satu atau beberapa grup WhatsApp
+     */
+    public function fetchGroupParticipants(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+        $evoService = $this->getEvoService($user);
+
+        $jids = [];
+        if ($request->filled('group_jid')) {
+            $jids[] = (string) $request->group_jid;
+        } elseif ($request->has('group_jids') && is_array($request->group_jids)) {
+            $jids = array_filter(array_map('strval', $request->group_jids));
+        }
+
+        if (empty($jids)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Silakan pilih minimal satu grup WhatsApp.',
+                'participants' => [],
+            ], 422);
+        }
+
+        $allContacts = [];
+        $groupDetails = [];
+        $failedGroups = [];
+
+        foreach ($jids as $jid) {
+            $info = $evoService->fetchGroupParticipants($jid);
+            if ($info['success']) {
+                $groupDetails[] = [
+                    'jid' => $jid,
+                    'subject' => $info['subject'],
+                    'announce' => $info['announce'],
+                    'count' => count($info['participants']),
+                ];
+                foreach ($info['participants'] as $p) {
+                    if (! in_array($p, $allContacts, true)) {
+                        $allContacts[] = $p;
+                    }
+                }
+            } else {
+                $failedGroups[] = [
+                    'jid' => $jid,
+                    'message' => $info['message'] ?? 'Gagal mengakses grup.',
+                ];
+            }
+        }
+
+        if (empty($allContacts) && ! empty($failedGroups)) {
+            return response()->json([
+                'success' => false,
+                'message' => $failedGroups[0]['message'] ?? 'Gagal menarik nomor kontak dari grup WhatsApp terpilih.',
+                'participants' => [],
+                'failed_groups' => $failedGroups,
+            ], 400);
+        }
+
+        return response()->json([
+            'success' => true,
+            'total' => count($allContacts),
+            'participants' => $allContacts,
+            'groups' => $groupDetails,
+            'failed_groups' => $failedGroups,
+            'message' => 'Berhasil menarik '.count($allContacts).' nomor kontak anggota dari '.count($groupDetails).' grup WhatsApp.',
+        ]);
     }
 
     /**
@@ -357,7 +450,7 @@ class WaController extends Controller
             $base64Data = preg_replace('#^data:image/\w+;base64,#i', '', $base64Image);
             $decoded = base64_decode($base64Data);
             if ($decoded !== false) {
-                $fileName = 'wa_blasts/' . uniqid('blast_', true) . '.jpg';
+                $fileName = 'wa_blasts/'.uniqid('blast_', true).'.jpg';
                 Storage::disk('public')->put($fileName, $decoded);
                 $mediaPath = $fileName;
             }
@@ -369,7 +462,7 @@ class WaController extends Controller
         // Buat Kampanye Blast
         $campaign = WaBlastCampaign::create([
             'user_id' => Auth::id(),
-            'judul' => 'Blast - ' . now()->translatedFormat('d M Y H:i'),
+            'judul' => 'Blast - '.now()->translatedFormat('d M Y H:i'),
             'pesan' => $pesanTemplate,
             'media_path' => $mediaPath,
             'total_target' => count($lines),
@@ -619,9 +712,7 @@ class WaController extends Controller
                 ]);
                 $campaign->increment('success_count');
             } else {
-                $errorDetails = is_array($response['data'] ?? null)
-                    ? json_encode($response['data'])
-                    : (string) ($response['data'] ?? 'Gagal dikirim oleh WhatsApp Gateway');
+                $errorDetails = EvolutionService::diagnoseAndFormatError($response['data'] ?? null, $cleanNumber, $evoService);
 
                 $recipient->update([
                     'status' => 'failed',
@@ -631,11 +722,13 @@ class WaController extends Controller
                 $campaign->increment('failed_count');
             }
         } catch (\Throwable $e) {
-            Log::error("Error sending WA to {$cleanNumber}: " . $e->getMessage());
+            Log::error("Error sending WA to {$cleanNumber}: ".$e->getMessage());
+            $errorDetails = EvolutionService::diagnoseAndFormatError($e->getMessage(), $cleanNumber, $evoService);
+
             $recipient->update([
                 'status' => 'failed',
                 'sent_at' => now(),
-                'error_message' => $e->getMessage(),
+                'error_message' => $errorDetails,
             ]);
             $campaign->increment('failed_count');
         }
@@ -760,7 +853,7 @@ class WaController extends Controller
 
         $newCampaign = WaBlastCampaign::create([
             'user_id' => Auth::id(),
-            'judul' => 'Retry Blast #' . $originalCampaign->id . ' - ' . now()->translatedFormat('d M H:i'),
+            'judul' => 'Retry Blast #'.$originalCampaign->id.' - '.now()->translatedFormat('d M H:i'),
             'pesan' => $originalCampaign->pesan,
             'media_path' => $originalCampaign->media_path,
             'total_target' => $failedRecipients->count(),
@@ -834,7 +927,7 @@ class WaController extends Controller
                 }
             }
         } catch (\Throwable $e) {
-            Log::warning('Auto-queue worker trigger notice: ' . $e->getMessage());
+            Log::warning('Auto-queue worker trigger notice: '.$e->getMessage());
         }
     }
 
@@ -846,12 +939,13 @@ class WaController extends Controller
         $cleanNumber = EvolutionService::normalizePhoneNumber($request->nomor);
         $pesan = $request->pesan;
         $base64Image = $request->gambar_base64;
+        $evoService = $this->getEvoService();
 
         if ($base64Image) {
             $base64Data = preg_replace('#^data:image/\w+;base64,#i', '', $base64Image);
-            $response = $this->evoService->sendMedia($cleanNumber, $pesan, $base64Data);
+            $response = $evoService->sendMedia($cleanNumber, $pesan, $base64Data);
         } else {
-            $response = $this->evoService->sendMessage($cleanNumber, $pesan);
+            $response = $evoService->sendMessage($cleanNumber, $pesan);
         }
 
         return response()->json([
@@ -1099,6 +1193,21 @@ class WaController extends Controller
             return ['nama' => '', 'nomor' => ''];
         }
 
+        // Dukungan JID Grup WhatsApp (misal: "Nama Grup - 120363043232123456@g.us", "Nama : 120363@g.us", atau "120363@g.us")
+        if (str_contains($trimmed, '@g.us')) {
+            if (preg_match('/^(.*?)(?:[\:\-]\s*|\s+)?([0-9\-]+@g\.us)$/i', $trimmed, $m)) {
+                $groupName = trim($m[1], " \t\n\r\0\x0B\"'-:");
+                $groupJid = trim($m[2]);
+
+                return [
+                    'nama' => ! empty($groupName) ? $groupName : 'Grup WhatsApp',
+                    'nomor' => $groupJid,
+                ];
+            }
+
+            return ['nama' => 'Grup WhatsApp', 'nomor' => $trimmed];
+        }
+
         // Abaikan baris header Excel / CSV jika tidak memuat nomor telepon
         if (
             preg_match('/^(no|nomor|name|nama|kontak|contact|phone|hp|telepon)[\s\t,;:\-\|]/i', $trimmed)
@@ -1125,7 +1234,7 @@ class WaController extends Controller
         if ($delimiter !== null) {
             $cells = array_values(array_filter(array_map(function ($c) {
                 return trim($c, " \t\n\r\0\x0B\"'");
-            }, explode($delimiter, $trimmed)), fn($c) => $c !== ''));
+            }, explode($delimiter, $trimmed)), fn ($c) => $c !== ''));
 
             $phoneIndex = -1;
             foreach ($cells as $idx => $cell) {
@@ -1170,7 +1279,7 @@ class WaController extends Controller
         if (empty($rawPhone)) {
             if (preg_match('/^(.*?)\(([\+?\d\s\-\.]{8,20})\)(.*?)$/', $trimmed, $m)) {
                 $rawPhone = trim($m[2]);
-                $nama = trim($m[1] . ' ' . $m[3]);
+                $nama = trim($m[1].' '.$m[3]);
             } elseif (preg_match('/^([^\:\-]+)[\:\-]\s*([\+?\d\s\-\.]{8,20})$/', $trimmed, $m)) {
                 $rawPhone = trim($m[2]);
                 $nama = trim($m[1]);
@@ -1179,7 +1288,7 @@ class WaController extends Controller
                 $nama = trim($m[2]);
             } elseif (preg_match('/^(.*?)((?:\+?62|0|8|9)\d[\d\s\-\.]{6,16}\d)(.*?)$/', $trimmed, $m)) {
                 $rawPhone = trim($m[2]);
-                $nama = trim($m[1] . ' ' . $m[3]);
+                $nama = trim($m[1].' '.$m[3]);
             }
         }
 

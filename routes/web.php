@@ -28,6 +28,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/wa/disconnect', [WaController::class, 'disconnect'])->name('wa.disconnect');
 
     Route::get('/wa/blast', [WaController::class, 'blast'])->name('wa.blast');
+    Route::get('/wa/account-groups', [WaController::class, 'fetchAccountWaGroups'])->name('wa.account.groups');
+    Route::post('/wa/group-participants', [WaController::class, 'fetchGroupParticipants'])->name('wa.group.participants');
 
     // API untuk Progress Bar (Tanpa refresh)
     Route::post('/wa/send-single', [WaController::class, 'sendSingle'])->name('wa.send.single');

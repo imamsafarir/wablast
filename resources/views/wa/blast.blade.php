@@ -179,23 +179,333 @@
                     <div
                         class="bg-white shadow-sm sm:rounded-2xl border border-gray-100 overflow-hidden group hover:shadow-md transition-all duration-300">
                         <div
-                            class="bg-gray-50/80 px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                            class="bg-gray-50/80 px-6 py-4 border-b border-gray-100 flex justify-between items-center gap-3">
                             <div class="flex items-center gap-3">
                                 <span
                                     class="bg-[#128C7E] text-white w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold shadow-sm">1</span>
                                 <h3 class="font-bold text-gray-800 text-lg">Daftar Kontak Target</h3>
                             </div>
-                            <a href="#section-kontak"
-                                class="text-xs font-bold text-[#128C7E] bg-emerald-50 border border-emerald-100 px-4 py-2 rounded-full hover:bg-[#128C7E] hover:text-white transition-all flex items-center gap-2 shadow-sm">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253">
-                                    </path>
-                                </svg>
-                                Buku Alamat
-                            </a>
+                            <div class="flex items-center gap-2">
+                                <!-- Tombol Bersihkan Kontak Target -->
+                                <button type="button" @click="clearAllTargets()"
+                                    :disabled="targetList.length === 0 && !newTargetContact"
+                                    class="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-full border transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100/80 border-rose-200 shadow-2xs"
+                                    title="Bersihkan seluruh daftar kontak target">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                                        </path>
+                                    </svg>
+                                    <span>Bersihkan</span>
+                                </button>
+                                <a href="#section-kontak"
+                                    class="text-xs font-bold text-[#128C7E] bg-emerald-50 border border-emerald-100 px-4 py-2 rounded-full hover:bg-[#128C7E] hover:text-white transition-all flex items-center gap-2 shadow-sm">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253">
+                                        </path>
+                                    </svg>
+                                    Buku Alamat
+                                </a>
+                            </div>
                         </div>
                         <div class="p-6">
+                            <!-- DROPDOWN TARIK NOMOR KONTAK DARI GRUP WHATSAPP -->
+                            <div
+                                class="mb-5 bg-white rounded-2xl border border-emerald-200/80 shadow-sm overflow-hidden transition-all duration-300">
+                                <!-- Dropdown Header / Toggle Bar -->
+                                <div @click="toggleGroupDropdown()"
+                                    class="w-full px-4 py-3.5 bg-gradient-to-r from-emerald-50/90 to-[#e7ffdb]/70 hover:from-emerald-100/90 hover:to-[#e7ffdb] flex items-center justify-between cursor-pointer select-none transition-colors border-b border-emerald-100/80">
+                                    <div class="flex items-center gap-3">
+                                        <span
+                                            class="w-9 h-9 rounded-xl bg-gradient-to-br from-[#128C7E] to-[#075e54] text-white flex items-center justify-center shadow-sm shrink-0">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
+                                                </path>
+                                            </svg>
+                                        </span>
+                                        <div class="text-left">
+                                            <div class="flex items-center gap-2 flex-wrap">
+                                                <h4 class="text-sm font-bold text-gray-800">Pilih Grup WhatsApp (Kirim
+                                                    Pesan ke Grup)</h4>
+                                                <span
+                                                    class="text-[11px] font-mono px-2 py-0.5 rounded-md bg-white border border-emerald-200 text-emerald-900 font-bold shadow-2xs flex items-center gap-1">
+                                                    <svg class="w-3 h-3 text-emerald-600" fill="none"
+                                                        stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z">
+                                                        </path>
+                                                    </svg>
+                                                    Instance: <span x-text="userInstance"></span>
+                                                </span>
+                                                <template x-if="isInstanceConnected">
+                                                    <span
+                                                        class="text-[11px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                        <span
+                                                            class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                                        Terhubung
+                                                    </span>
+                                                </template>
+                                                <template x-if="!isInstanceConnected">
+                                                    <span
+                                                        class="text-[11px] font-bold bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                        <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                                                        Belum Terhubung
+                                                    </span>
+                                                </template>
+                                                <span x-show="accountGroups.length > 0"
+                                                    class="text-[11px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full"
+                                                    x-text="accountGroups.length + ' grup aktif'"></span>
+                                            </div>
+                                            <p class="text-xs text-gray-500">Pilih grup untuk dikirimi pesan langsung
+                                                ke grup, atau tarik nomor kontak anggota.</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-center gap-2">
+                                        <span x-show="!openGroupDropdown"
+                                            class="hidden sm:inline-block text-xs font-semibold text-[#128C7E] bg-white px-2.5 py-1 rounded-lg border border-emerald-200 shadow-2xs">
+                                            Buka Dropdown
+                                        </span>
+                                        <svg class="w-5 h-5 text-gray-500 transform transition-transform duration-200"
+                                            :class="{ 'rotate-180 text-[#128C7E]': openGroupDropdown }" fill="none"
+                                            stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 9l-7 7-7-7"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+
+                                <!-- Dropdown Content / Collapsible Panel -->
+                                <div x-show="openGroupDropdown" x-transition:enter="transition ease-out duration-200"
+                                    x-transition:enter-start="opacity-0 -translate-y-2"
+                                    x-transition:enter-end="opacity-100 translate-y-0"
+                                    x-transition:leave="transition ease-in duration-150"
+                                    x-transition:leave-start="opacity-100 translate-y-0"
+                                    x-transition:leave-end="opacity-0 -translate-y-2" style="display: none;"
+                                    class="p-4 bg-gray-50/50 space-y-4">
+                                    <!-- Disconnected Warning Banner -->
+                                    <template x-if="!isInstanceConnected">
+                                        <div
+                                            class="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+                                            <div class="flex items-start gap-2.5">
+                                                <svg class="w-5 h-5 text-amber-600 shrink-0 mt-0.5" fill="none"
+                                                    stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                                </svg>
+                                                <div>
+                                                    <p class="font-bold text-amber-900">Instance WhatsApp (<span
+                                                            x-text="userInstance"></span>) Belum Terhubung</p>
+                                                    <p class="text-amber-700 mt-0.5">Daftar grup WhatsApp hanya
+                                                        menampilkan grup dari nomor instance akun Anda. Hubungkan
+                                                        WhatsApp terlebih dahulu di menu Pengaturan.</p>
+                                                </div>
+                                            </div>
+                                            <a href="{{ route('wa.setting') }}"
+                                                class="shrink-0 bg-amber-600 hover:bg-amber-700 text-white font-bold px-3 py-1.5 rounded-lg transition shadow-xs">
+                                                Hubungkan WhatsApp
+                                            </a>
+                                        </div>
+                                    </template>
+
+                                    <!-- Action Toolbar -->
+                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                                        <div class="relative flex-1">
+                                            <input type="text" x-model="groupSearch"
+                                                placeholder="Cari nama grup WhatsApp..."
+                                                class="w-full text-xs bg-white border border-gray-200 rounded-xl pl-8 pr-3 py-2 focus:border-[#128C7E] focus:ring-1 focus:ring-[#128C7E] shadow-2xs">
+                                            <svg class="w-4 h-4 text-gray-400 absolute left-2.5 top-2.5"
+                                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                            </svg>
+                                        </div>
+
+                                        <div class="flex items-center gap-2">
+                                            <button type="button" @click="fetchAccountGroups(true)"
+                                                :disabled="isLoadingGroups"
+                                                class="inline-flex items-center gap-1.5 bg-white hover:bg-gray-100 text-gray-700 text-xs font-bold px-3 py-2 rounded-xl border border-gray-200 transition shadow-2xs disabled:opacity-50">
+                                                <svg x-show="!isLoadingGroups" class="w-3.5 h-3.5 text-[#128C7E]"
+                                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                                                    </path>
+                                                </svg>
+                                                <svg x-show="isLoadingGroups" style="display: none;"
+                                                    class="w-3.5 h-3.5 animate-spin text-[#128C7E]" fill="none"
+                                                    viewBox="0 0 24 24">
+                                                    <circle class="opacity-25" cx="12" cy="12" r="10"
+                                                        stroke="currentColor" stroke-width="4"></circle>
+                                                    <path class="opacity-75" fill="currentColor"
+                                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                                    </path>
+                                                </svg>
+                                                <span
+                                                    x-text="isLoadingGroups ? 'Memvalidasi...' : 'Segarkan Grup'"></span>
+                                            </button>
+
+                                            <template x-if="accountGroups.length > 0">
+                                                <div class="flex items-center gap-1.5 text-xs">
+                                                    <button type="button" @click="selectAllAccountGroups(true)"
+                                                        class="text-[#128C7E] hover:underline font-bold px-1.5 py-1">Pilih
+                                                        Semua</button>
+                                                    <span class="text-gray-300">|</span>
+                                                    <button type="button" @click="selectAllAccountGroups(false)"
+                                                        class="text-rose-500 hover:underline font-bold px-1.5 py-1">Batal</button>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
+
+                                    <!-- Scrollable Groups List -->
+                                    <div
+                                        class="max-h-56 overflow-y-auto bg-white rounded-xl border border-gray-200 p-2 space-y-1 shadow-inner">
+                                        <template x-if="isLoadingGroups && accountGroups.length === 0">
+                                            <div
+                                                class="py-8 text-center text-xs text-gray-500 flex flex-col items-center justify-center gap-2">
+                                                <svg class="w-6 h-6 animate-spin text-[#128C7E]" fill="none"
+                                                    viewBox="0 0 24 24">
+                                                    <circle class="opacity-25" cx="12" cy="12" r="10"
+                                                        stroke="currentColor" stroke-width="4"></circle>
+                                                    <path class="opacity-75" fill="currentColor"
+                                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                                    </path>
+                                                </svg>
+                                                <span>Memeriksa dan memvalidasi grup aktif dari WhatsApp
+                                                    Gateway...</span>
+                                            </div>
+                                        </template>
+
+                                        <template
+                                            x-if="!isLoadingGroups && accountGroups.length === 0 && !isInstanceConnected">
+                                            <div class="py-8 text-center text-xs text-amber-700 space-y-1">
+                                                <p class="font-bold">WhatsApp pada instance "<span
+                                                        x-text="userInstance"></span>" belum terhubung.</p>
+                                                <p class="text-gray-400">Hubungkan WhatsApp di menu Pengaturan untuk
+                                                    memuat dan memilih grup.</p>
+                                            </div>
+                                        </template>
+
+                                        <template
+                                            x-if="!isLoadingGroups && accountGroups.length === 0 && isInstanceConnected">
+                                            <div class="py-8 text-center text-xs text-gray-400">
+                                                Belum ada grup yang dimuat untuk instance "<span
+                                                    x-text="userInstance"></span>". Klik tombol <strong>"Segarkan
+                                                    Grup"</strong>
+                                                di atas.
+                                            </div>
+                                        </template>
+
+                                        <template x-for="g in filteredAccountGroups" :key="g.id">
+                                            <div
+                                                class="flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 border border-slate-100 transition-colors gap-2">
+                                                <label class="flex items-center gap-2.5 min-w-0 cursor-pointer flex-1">
+                                                    <input type="checkbox" :value="g.id"
+                                                        x-model="selectedGroupIds"
+                                                        class="w-4 h-4 text-[#128C7E] rounded border-gray-300 focus:ring-[#128C7E]">
+                                                    <div class="min-w-0">
+                                                        <span class="font-bold text-gray-800 text-xs truncate block"
+                                                            x-text="g.subject"></span>
+                                                        <span class="text-[10px] text-gray-400 font-normal block"
+                                                            x-text="g.size ? g.size + ' anggota' : 'Grup Aktif'"></span>
+                                                    </div>
+                                                </label>
+
+                                                <div class="flex items-center gap-1.5 shrink-0">
+                                                    <!-- Tombol 1: Tambahkan Grup Langsung ke Target (Kirim Pesan ke Grup) -->
+                                                    <button type="button" @click="addGroupToTarget(g)"
+                                                        class="text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-lg transition flex items-center gap-1"
+                                                        title="Tambahkan grup ini langsung ke daftar target pengiriman">
+                                                        <span>+ Pilih Grup</span>
+                                                    </button>
+                                                    <!-- Tombol 2: Tarik Nomor Anggota Grup (Japri) -->
+                                                    <button type="button" @click="extractGroupParticipants(g.id)"
+                                                        :disabled="isExtractingParticipants"
+                                                        class="text-[11px] font-semibold text-gray-500 hover:text-gray-800 bg-white hover:bg-gray-50 border border-gray-200 px-2 py-1 rounded-lg transition"
+                                                        title="Tarik nomor kontak orang-orang anggota dari grup ini ke daftar target">
+                                                        📥 Anggota
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </template>
+
+                                        <template
+                                            x-if="accountGroups.length > 0 && filteredAccountGroups.length === 0">
+                                            <div class="text-center py-6 text-xs text-gray-400">
+                                                Tidak ada grup yang cocok dengan kata kunci "<span
+                                                    x-text="groupSearch"></span>".
+                                            </div>
+                                        </template>
+                                    </div>
+
+                                    <!-- Multi-Action Footer -->
+                                    <div
+                                        class="pt-2.5 border-t border-gray-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                        <div class="text-xs text-gray-600">
+                                            Terpilih: <strong class="text-[#128C7E]"
+                                                x-text="selectedGroupIds.length"></strong> grup
+                                        </div>
+
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <!-- Action Utama: Tambahkan Grup Terpilih Langsung (Kirim ke Grup) -->
+                                            <button type="button" @click="addSelectedGroupsToTargets()"
+                                                :disabled="selectedGroupIds.length === 0"
+                                                class="bg-[#128C7E] hover:bg-[#075e54] text-white text-xs font-bold px-3.5 py-2 rounded-xl transition shadow-sm disabled:opacity-40 inline-flex items-center gap-1.5">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                                </svg>
+                                                <span>+ Tambah <span
+                                                        x-text="selectedGroupIds.length > 0 ? selectedGroupIds.length + ' ' : ''"></span>Grup
+                                                    Terpilih</span>
+                                            </button>
+
+                                            <!-- Action Sekunder: Tarik Kontak Anggota (Japri Orang-orang) -->
+                                            <button type="button" @click="extractGroupParticipants()"
+                                                :disabled="selectedGroupIds.length === 0 || isExtractingParticipants"
+                                                class="bg-white hover:bg-gray-50 text-gray-700 hover:text-emerald-700 text-xs font-bold px-3 py-2 rounded-xl border border-gray-200 transition shadow-2xs disabled:opacity-40 inline-flex items-center gap-1.5"
+                                                title="Tarik seluruh nomor kontak orang-orang anggota dari grup terpilih">
+                                                <svg x-show="!isExtractingParticipants"
+                                                    class="w-3.5 h-3.5 text-gray-500" fill="none"
+                                                    stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4">
+                                                    </path>
+                                                </svg>
+                                                <svg x-show="isExtractingParticipants" style="display: none;"
+                                                    class="w-3.5 h-3.5 animate-spin" fill="none"
+                                                    viewBox="0 0 24 24">
+                                                    <circle class="opacity-25" cx="12" cy="12" r="10"
+                                                        stroke="currentColor" stroke-width="4"></circle>
+                                                    <path class="opacity-75" fill="currentColor"
+                                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                                    </path>
+                                                </svg>
+                                                <span
+                                                    x-text="isExtractingParticipants ? 'Mengekstrak Anggota...' : '📥 Tarik Anggota (Japri)'"></span>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Feedback / Status Alert -->
+                                    <div x-show="groupFetchMessage" style="display: none;"
+                                        class="p-2.5 bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 rounded-xl flex items-center justify-between gap-2">
+                                        <span x-text="groupFetchMessage"></span>
+                                        <button type="button" @click="groupFetchMessage = ''"
+                                            class="text-emerald-600 hover:text-emerald-900 font-bold text-sm leading-none">&times;</button>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- KOTAK CONTOH PENGISIAN NOMOR -->
                             <div
                                 class="mb-5 bg-gradient-to-r from-blue-50 to-indigo-50/50 rounded-xl p-4 border border-blue-100/60 shadow-inner">
@@ -282,12 +592,24 @@
 
                             <div
                                 class="mt-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 bg-gray-50 px-4 py-2.5 rounded-lg border border-gray-100">
-                                <div class="flex items-center gap-2">
+                                <div class="flex items-center gap-2 flex-wrap">
                                     <span class="text-xs text-gray-500 font-medium">Sistem otomatis mendeteksi &
                                         mencegah nomor ganda.</span>
                                     <button type="button" @click="formatAndCleanTargets()"
                                         class="text-xs bg-emerald-100 hover:bg-[#128C7E] text-[#075e54] hover:text-white px-2.5 py-1 rounded-md font-bold transition-all flex items-center gap-1 shadow-sm">
                                         <span>✨</span> Rapikan & Format Otomatis
+                                    </button>
+                                    <button type="button" @click="clearAllTargets()"
+                                        x-show="targetList.length > 0 || newTargetContact"
+                                        class="text-xs text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2.5 py-1 rounded-md font-bold transition-all flex items-center gap-1 shadow-2xs"
+                                        title="Kosongkan seluruh daftar kontak target">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                                            </path>
+                                        </svg>
+                                        Bersihkan Target
                                     </button>
                                 </div>
                                 <span class="text-sm text-gray-600 font-bold">Total Target: <span x-text="targetCount"
@@ -299,10 +621,25 @@
                     <!-- FORM 2: KONTEN PESAN -->
                     <div
                         class="bg-white shadow-sm sm:rounded-[24px] border border-slate-200 overflow-hidden transition-all">
-                        <div class="px-6 py-5 border-b border-slate-100 flex items-center gap-3 bg-white">
-                            <span
-                                class="bg-[#128C7E] text-white w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold shadow-sm">2</span>
-                            <h3 class="font-bold text-slate-800 text-lg">Konten Pesan & Media</h3>
+                        <div
+                            class="px-6 py-4 sm:py-5 border-b border-slate-100 flex items-center justify-between gap-3 bg-white">
+                            <div class="flex items-center gap-3">
+                                <span
+                                    class="bg-[#128C7E] text-white w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold shadow-sm">2</span>
+                                <h3 class="font-bold text-slate-800 text-lg">Konten Pesan & Media</h3>
+                            </div>
+                            <!-- Tombol Bersihkan Seluruhnya -->
+                            <button type="button" @click="clearMessageAndMedia()"
+                                :disabled="!pesanInput && !imageUrl && !imageBase64"
+                                class="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl border transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100/80 border-rose-200/80 shadow-2xs"
+                                title="Bersihkan seluruh isi teks pesan dan lampiran media">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                                    </path>
+                                </svg>
+                                <span>Bersihkan Seluruhnya</span>
+                            </button>
                         </div>
                         <div class="p-6 pt-5">
 
@@ -336,12 +673,25 @@
 
                             <!-- Upload Media -->
                             <div class="mb-5">
-                                <label
-                                    class="block text-xs font-bold text-slate-600 mb-2 uppercase tracking-wide">Lampiran
-                                    Media (Opsional)</label>
+                                <div class="flex items-center justify-between mb-2">
+                                    <label
+                                        class="block text-xs font-bold text-slate-600 uppercase tracking-wide">Lampiran
+                                        Media (Opsional)</label>
+                                    <template x-if="imageUrl">
+                                        <button type="button" @click="clearMedia()"
+                                            class="text-[11px] text-rose-600 hover:text-rose-800 font-bold hover:underline flex items-center gap-1 transition">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M6 18L18 6M6 6l12 12"></path>
+                                            </svg>
+                                            Hapus Media
+                                        </button>
+                                    </template>
+                                </div>
                                 <div
                                     class="relative border-2 border-dashed border-slate-200 rounded-xl p-3 hover:border-[#128C7E] bg-slate-50/50 transition-colors">
-                                    <input type="file" accept="image/*" @change="previewImage"
+                                    <input type="file" x-ref="imageInput" accept="image/*" @change="previewImage"
                                         class="block w-full text-sm text-slate-500 file:mr-4 file:py-1.5 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-200 file:text-slate-700 hover:file:bg-slate-300 cursor-pointer focus:outline-none transition-colors">
                                 </div>
                             </div>
@@ -355,59 +705,75 @@
 
                                     <!-- Toolbar Ikon -->
                                     <div
-                                        class="bg-slate-50 border-b border-slate-200 px-3 py-2 flex items-center gap-1.5">
-                                        <button type="button" @click="insertFormat('*')"
-                                            class="p-1.5 text-slate-500 hover:bg-slate-200 hover:text-slate-800 rounded-md transition-colors"
-                                            title="Tebal">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                                stroke-width="2.5" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round"
-                                                    d="M6 4h8a4 4 0 014 4 4 4 0 01-4 4H6z"></path>
-                                                <path stroke-linecap="round" stroke-linejoin="round"
-                                                    d="M6 12h9a4 4 0 014 4 4 4 0 01-4 4H6z"></path>
-                                            </svg>
-                                        </button>
-                                        <button type="button" @click="insertFormat('_')"
-                                            class="p-1.5 text-slate-500 hover:bg-slate-200 hover:text-slate-800 rounded-md transition-colors"
-                                            title="Miring">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                                stroke-width="2" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round"
-                                                    d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
-                                            </svg>
-                                        </button>
-                                        <button type="button" @click="insertFormat('~')"
-                                            class="p-1.5 text-slate-500 hover:bg-slate-200 hover:text-slate-800 rounded-md transition-colors"
-                                            title="Coret">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                                stroke-width="2" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round"
-                                                    d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3"></path>
-                                            </svg>
-                                        </button>
-
-                                        <div class="w-px h-4 bg-slate-300 mx-1"></div>
-
-                                        <div class="relative">
-                                            <button type="button" @click="showEmoji = !showEmoji"
-                                                class="p-1.5 text-slate-500 hover:bg-slate-200 hover:text-slate-800 rounded-md transition-colors flex items-center gap-1"
-                                                title="Sisipkan Emoji">
+                                        class="bg-slate-50 border-b border-slate-200 px-3 py-2 flex items-center justify-between gap-2">
+                                        <div class="flex items-center gap-1.5">
+                                            <button type="button" @click="insertFormat('*')"
+                                                class="p-1.5 text-slate-500 hover:bg-slate-200 hover:text-slate-800 rounded-md transition-colors"
+                                                title="Tebal">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                                    stroke-width="2.5" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        d="M6 4h8a4 4 0 014 4 4 4 0 01-4 4H6z"></path>
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        d="M6 12h9a4 4 0 014 4 4 4 0 01-4 4H6z"></path>
+                                                </svg>
+                                            </button>
+                                            <button type="button" @click="insertFormat('_')"
+                                                class="p-1.5 text-slate-500 hover:bg-slate-200 hover:text-slate-800 rounded-md transition-colors"
+                                                title="Miring">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor"
                                                     stroke-width="2" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round"
-                                                        d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
-                                                    </path>
+                                                        d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
                                                 </svg>
                                             </button>
-                                            <div x-show="showEmoji" @click.away="showEmoji = false" x-transition
-                                                class="absolute z-20 mt-1 w-48 bg-white border border-slate-200 rounded-xl shadow-lg p-2 grid grid-cols-5 gap-1"
-                                                style="display: none;">
-                                                <template x-for="emoji in emojis">
-                                                    <button type="button" @click="insertEmoji(emoji)"
-                                                        class="text-lg hover:bg-slate-100 rounded transition-transform hover:scale-110"
-                                                        x-text="emoji"></button>
-                                                </template>
+                                            <button type="button" @click="insertFormat('~')"
+                                                class="p-1.5 text-slate-500 hover:bg-slate-200 hover:text-slate-800 rounded-md transition-colors"
+                                                title="Coret">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                                    stroke-width="2" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3"></path>
+                                                </svg>
+                                            </button>
+
+                                            <div class="w-px h-4 bg-slate-300 mx-1"></div>
+
+                                            <div class="relative">
+                                                <button type="button" @click="showEmoji = !showEmoji"
+                                                    class="p-1.5 text-slate-500 hover:bg-slate-200 hover:text-slate-800 rounded-md transition-colors flex items-center gap-1"
+                                                    title="Sisipkan Emoji">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                                        stroke-width="2" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
+                                                        </path>
+                                                    </svg>
+                                                </button>
+                                                <div x-show="showEmoji" @click.away="showEmoji = false" x-transition
+                                                    class="absolute z-20 mt-1 w-48 bg-white border border-slate-200 rounded-xl shadow-lg p-2 grid grid-cols-5 gap-1"
+                                                    style="display: none;">
+                                                    <template x-for="emoji in emojis">
+                                                        <button type="button" @click="insertEmoji(emoji)"
+                                                            class="text-lg hover:bg-slate-100 rounded transition-transform hover:scale-110"
+                                                            x-text="emoji"></button>
+                                                    </template>
+                                                </div>
                                             </div>
+                                        </div>
+
+                                        <!-- Indikator Karakter & Bersihkan Teks -->
+                                        <div class="flex items-center gap-2">
+                                            <span x-show="pesanInput && pesanInput.length > 0"
+                                                class="text-[11px] text-slate-400 font-medium"
+                                                x-text="pesanInput.length + ' karakter'"></span>
+                                            <button type="button"
+                                                @click="pesanInput = ''; if ($refs.pesanTextarea) $refs.pesanTextarea.focus();"
+                                                x-show="pesanInput && pesanInput.length > 0"
+                                                class="text-[11px] text-rose-500 hover:text-rose-700 font-semibold hover:underline"
+                                                title="Kosongkan teks pesan">
+                                                Hapus Teks
+                                            </button>
                                         </div>
                                     </div>
                                     <textarea x-ref="pesanTextarea" x-model="pesanInput" rows="6" placeholder="Ketik pesan Anda di sini..."
@@ -672,7 +1038,7 @@
                     </h3>
 
                     <form :action="contactId ? `/wa/contact-group/${contactId}` : '{{ route('wa.contact.store') }}'"
-                        method="POST">
+                        method="POST" @submit="prepareContactSubmit()">
                         @csrf
                         <template x-if="contactId"><input type="hidden" name="_method" value="PUT"></template>
 
@@ -685,58 +1051,13 @@
                         </div>
 
                         <!-- KOTAK SMART INPUT (CHIPS) -->
-                        <div class="mb-6" x-data="{
-                            newContact: '',
-                        
-                            get contactList() {
-                                return this.contactNomor ? this.contactNomor.split('\n').filter(i => i.trim() !== '') : [];
-                            },
-                        
-                            addContacts(rawText) {
-                                let newContacts = parseWaContacts(rawText);
-                                let currentList = [...this.contactList];
-                        
-                                newContacts.forEach(contact => {
-                                    if (!currentList.includes(contact)) {
-                                        currentList.push(contact);
-                                    }
-                                });
-                        
-                                this.contactNomor = currentList.join('\n');
-                                this.newContact = '';
-                            },
-                        
-                            removeContact(index) {
-                                let currentList = [...this.contactList];
-                                currentList.splice(index, 1);
-                                this.contactNomor = currentList.join('\n');
-                            },
-                        
-                            handleModalPaste(e) {
-                                let pastedText = (e.clipboardData || window.clipboardData).getData('text');
-                                e.preventDefault();
-                                this.addContacts(pastedText);
-                            },
-                        
-                            handleEnter(e) {
-                                if (this.newContact.trim() !== '') {
-                                    e.preventDefault();
-                                    this.addContacts(this.newContact);
-                                }
-                            },
-                        
-                            prepareSubmit() {
-                                if (this.newContact && this.newContact.trim() !== '') {
-                                    this.addContacts(this.newContact);
-                                }
-                            }
-                        }">
+                        <div class="mb-6">
                             <label
                                 class="block text-sm font-bold text-gray-700 mb-2 flex justify-between items-center">
                                 <span>Daftar Kontak Target</span>
                                 <span
                                     class="text-xs font-bold px-2.5 py-1 bg-blue-100 text-blue-700 rounded-lg shadow-sm"><span
-                                        x-text="contactList.length"></span> Kontak</span>
+                                        x-text="contactModalList.length"></span> Kontak</span>
                             </label>
 
                             <!-- Input tersembunyi yang akan dikirim ke Laravel Database -->
@@ -751,7 +1072,7 @@
                                     class="flex-1 overflow-y-auto p-4 flex flex-wrap gap-2 items-start content-start border-b border-gray-100 relative">
 
                                     <!-- Jika Kosong -->
-                                    <div x-show="contactList.length === 0"
+                                    <div x-show="contactModalList.length === 0"
                                         class="absolute inset-0 flex flex-col items-center justify-center text-gray-400 gap-3">
                                         <svg class="w-12 h-12 opacity-40" fill="none" stroke="currentColor"
                                             viewBox="0 0 24 24">
@@ -763,12 +1084,12 @@
                                     </div>
 
                                     <!-- Looping Nomor menjadi Label/Badge Berwarna -->
-                                    <template x-for="(contact, index) in contactList" :key="index">
+                                    <template x-for="(contact, index) in contactModalList" :key="index">
                                         <span
                                             class="inline-flex items-center gap-2 bg-white border border-blue-200 text-blue-800 px-3 py-1.5 rounded-lg text-sm font-medium shadow-sm group hover:border-blue-400 hover:shadow transition-all">
                                             <span x-text="contact"></span>
                                             <!-- Tombol Hapus (X) -->
-                                            <button type="button" @click="removeContact(index)"
+                                            <button type="button" @click="removeContactModalNumber(index)"
                                                 class="text-blue-300 hover:text-white hover:bg-red-500 rounded-md p-0.5 transition-colors focus:outline-none"
                                                 title="Hapus kontak ini">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor"
@@ -783,7 +1104,8 @@
 
                                 <!-- Area Input Teks (Paste & Ketik) -->
                                 <div class="p-2.5 bg-slate-100 border-t border-slate-200 relative z-20">
-                                    <textarea x-model="newContact" @paste="handleModalPaste($event)" @keydown.enter="handleEnter($event)" rows="2"
+                                    <textarea x-model="contactNewNomor" @paste="handleContactModalPaste($event)"
+                                        @keydown.enter="handleContactModalEnter($event)" rows="2"
                                         class="w-full border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm resize-none bg-white rounded-xl p-3 shadow-sm placeholder-slate-400 transition-all"
                                         placeholder="Ketik nomor lalu tekan Enter, atau PASTE data Excel (Nama & Nomor) ke sini..."></textarea>
                                 </div>
@@ -793,7 +1115,7 @@
                         <div class="flex justify-end gap-3 mt-8">
                             <button type="button" @click="showContactModal = false"
                                 class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-3 rounded-xl font-bold transition-colors">Batal</button>
-                            <button type="submit" @click="prepareSubmit()"
+                            <button type="submit"
                                 class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-blue-500/30 transition-transform transform hover:-translate-y-0.5 flex items-center gap-2">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -1101,6 +1423,12 @@
                         /\s{2,}/g, ' ').trim();
                 }
 
+                // Dukungan JID Grup WhatsApp (misal: Nama Grup - 120363043232123456@g.us atau 120363043232123456@g.us)
+                if (trimmed.includes('@g.us')) {
+                    parsedList.push(trimmed);
+                    return;
+                }
+
                 let cleanNum = normalizeWaPhone(rawPhone || trimmed);
                 if (cleanNum && cleanNum.length >= 9) {
                     let formatted = name ? `${name} - ${cleanNum}` : cleanNum;
@@ -1120,6 +1448,18 @@
                 imageBase64: null,
                 antiBot: true, // Default tercentang
 
+                // Fitur Tarik Grup WhatsApp Instance (Dropdown)
+                userInstance: '{{ $userInstance }}',
+                isInstanceConnected: {{ $isInstanceConnected ? 'true' : 'false' }},
+                instanceState: '{{ $instanceState }}',
+                openGroupDropdown: false,
+                accountGroups: [],
+                selectedGroupIds: [],
+                groupSearch: '',
+                isLoadingGroups: false,
+                isExtractingParticipants: false,
+                groupFetchMessage: '',
+
                 showEmoji: false,
                 emojis: ['😀', '😂', '😇', '🥰', '😎', '🙏', '👍', '🔥', '🎉', '✨', '✅', '❌', '⚠️',
                     '📢', '💼', '📦', '📝', '⭐', '🚀', '❤️'
@@ -1135,6 +1475,19 @@
                 gagalCount: 0,
                 currentCampaignId: null,
                 pollTimer: null,
+
+                // Modal Template
+                showTemplateModal: false,
+                templateId: null,
+                templateJudul: '',
+                templatePesan: '',
+
+                // Modal Grup Kontak (Buku Alamat)
+                showContactModal: false,
+                contactId: null,
+                contactNamaGrup: '',
+                contactNomor: '',
+                contactNewNomor: '',
 
                 init() {
                     this.checkActiveCampaign();
@@ -1194,15 +1547,176 @@
                     }
                 },
 
-                showTemplateModal: false,
-                templateId: null,
-                templateJudul: '',
-                templatePesan: '',
-                showContactModal: false,
-                contactId: null,
-                contactNamaGrup: '',
-                contactNomor: '',
+                // Tarik Grup WhatsApp dari Instance
+                async fetchAccountGroups(forceRefresh = false) {
+                    this.isLoadingGroups = true;
+                    this.groupFetchMessage = '';
+                    try {
+                        let url = '{{ route('wa.account.groups') }}' + (forceRefresh ?
+                            '?refresh=1' : '');
+                        let res = await fetch(url);
+                        let data = await res.json();
+                        if (data.instance) {
+                            this.userInstance = data.instance;
+                        }
+                        if (typeof data.connected !== 'undefined') {
+                            this.isInstanceConnected = data.connected;
+                        }
+                        if (data.state) {
+                            this.instanceState = data.state;
+                        }
+                        if (data.success && Array.isArray(data.groups)) {
+                            this.accountGroups = data.groups;
+                            if (this.accountGroups.length === 0) {
+                                this.groupFetchMessage = data.message ||
+                                    `Tidak ada grup WhatsApp yang terdeteksi pada instance "${this.userInstance}".`;
+                            } else {
+                                this.selectedGroupIds = [];
+                                this.groupFetchMessage =
+                                    `Ditemukan ${this.accountGroups.length} grup WhatsApp aktif dari instance "${this.userInstance}".`;
+                            }
+                        } else {
+                            this.groupFetchMessage = data.message ||
+                                'Gagal menarik daftar grup dari WhatsApp Gateway.';
+                        }
+                    } catch (e) {
+                        console.error('Error fetching account WA groups:', e);
+                        this.groupFetchMessage =
+                            'Terjadi kesalahan koneksi saat menarik grup WhatsApp.';
+                    } finally {
+                        this.isLoadingGroups = false;
+                    }
+                },
 
+                get filteredAccountGroups() {
+                    if (!this.groupSearch.trim()) {
+                        return this.accountGroups;
+                    }
+                    let q = this.groupSearch.toLowerCase();
+                    return this.accountGroups.filter(g => (g.subject || '').toLowerCase().includes(
+                        q) || (g.id || '').includes(q));
+                },
+
+                selectAllAccountGroups(select = true) {
+                    if (select) {
+                        let ids = this.filteredAccountGroups.map(g => g.id);
+                        let set = new Set(this.selectedGroupIds);
+                        ids.forEach(id => set.add(id));
+                        this.selectedGroupIds = Array.from(set);
+                    } else {
+                        if (this.groupSearch.trim()) {
+                            let filteredIds = this.filteredAccountGroups.map(g => g.id);
+                            this.selectedGroupIds = this.selectedGroupIds.filter(id => !filteredIds
+                                .includes(id));
+                        } else {
+                            this.selectedGroupIds = [];
+                        }
+                    }
+                },
+
+                addGroupToTarget(group) {
+                    let item = `${group.subject} - ${group.id}`;
+                    let currentList = [...this.targetList];
+                    if (!currentList.includes(item)) {
+                        currentList.push(item);
+                        this.targetInput = currentList.join('\n');
+                        this.groupFetchMessage =
+                            `Grup "${group.subject}" berhasil ditambahkan ke daftar target!`;
+                    } else {
+                        this.groupFetchMessage = `Grup "${group.subject}" sudah ada di daftar target.`;
+                    }
+                },
+
+                addSelectedGroupsToTargets() {
+                    if (this.selectedGroupIds.length === 0) return;
+
+                    let selectedGroups = this.accountGroups.filter(g => this.selectedGroupIds.includes(g
+                        .id));
+                    let currentList = [...this.targetList];
+                    let addedCount = 0;
+
+                    selectedGroups.forEach(g => {
+                        let item = `${g.subject} - ${g.id}`;
+                        if (!currentList.includes(item)) {
+                            currentList.push(item);
+                            addedCount++;
+                        }
+                    });
+
+                    this.targetInput = currentList.join('\n');
+                    this.groupFetchMessage =
+                        `Berhasil menambahkan ${addedCount} grup WhatsApp ke daftar target!`;
+                },
+
+                toggleGroupDropdown() {
+                    this.openGroupDropdown = !this.openGroupDropdown;
+                    if (this.openGroupDropdown && this.accountGroups.length === 0 && !this
+                        .isLoadingGroups && this.isInstanceConnected) {
+                        this.fetchAccountGroups();
+                    }
+                },
+
+                async extractGroupParticipants(targetGroupIds = null) {
+                    let ids = [];
+                    if (targetGroupIds) {
+                        ids = Array.isArray(targetGroupIds) ? targetGroupIds : [targetGroupIds];
+                    } else {
+                        ids = this.selectedGroupIds;
+                    }
+
+                    if (!ids || ids.length === 0) {
+                        alert('Silakan pilih minimal satu grup WhatsApp terlebih dahulu.');
+                        return;
+                    }
+
+                    this.isExtractingParticipants = true;
+                    this.groupFetchMessage =
+                        'Sedang mengekstrak nomor kontak dari grup terpilih...';
+
+                    try {
+                        let res = await fetch('{{ route('wa.group.participants') }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'Accept': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                group_jids: ids
+                            })
+                        });
+                        let data = await res.json();
+
+                        if (data.success && Array.isArray(data.participants)) {
+                            let currentList = [...this.targetList];
+                            let addedCount = 0;
+
+                            data.participants.forEach(phone => {
+                                if (!currentList.includes(phone)) {
+                                    currentList.push(phone);
+                                    addedCount++;
+                                }
+                            });
+
+                            this.targetInput = currentList.join('\n');
+                            this.groupFetchMessage =
+                                `Berhasil menarik ${data.participants.length} nomor kontak anggota (${addedCount} nomor baru dimasukkan ke daftar target).`;
+                        } else {
+                            this.groupFetchMessage = data.message ||
+                                'Gagal mengekstrak nomor kontak dari grup WhatsApp.';
+                            alert(this.groupFetchMessage);
+                        }
+                    } catch (e) {
+                        console.error('Error extracting group participants:', e);
+                        this.groupFetchMessage =
+                            'Terjadi kesalahan koneksi saat menarik nomor kontak dari grup.';
+                        alert(this.groupFetchMessage);
+                    } finally {
+                        this.isExtractingParticipants = false;
+                    }
+                },
+
+                // Target Contacts
                 get targetList() {
                     return this.targetInput ? this.targetInput.split('\n').filter(i => i.trim() !==
                         '') : [];
@@ -1243,26 +1757,40 @@
                     this.targetInput = unique.join('\n');
                     this.newTargetContact = '';
                 },
+
                 removeTargetContact(index) {
                     let currentList = this.targetList;
                     currentList.splice(index, 1);
                     this.targetInput = currentList.join('\n');
                 },
+
+                clearAllTargets() {
+                    this.targetInput = '';
+                    this.newTargetContact = '';
+                    if (this.$refs.inputTargetTextarea) {
+                        this.$refs.inputTargetTextarea.focus();
+                    }
+                },
+
                 handleMainPaste(e) {
                     e.preventDefault();
                     this.addTargetContacts((e.clipboardData || window.clipboardData).getData('text'));
                 },
+
                 handleMainEnter(e) {
                     if (this.newTargetContact.trim()) {
                         e.preventDefault();
                         this.addTargetContacts(this.newTargetContact);
                     }
                 },
+
                 get currentTime() {
                     let d = new Date();
                     return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes()
                         .toString().padStart(2, '0');
                 },
+
+                // Template Actions
                 pakaiTemplate(pesan) {
                     this.pesanInput = pesan;
                     window.scrollTo({
@@ -1270,12 +1798,15 @@
                         behavior: 'smooth'
                     });
                 },
+
                 openTemplateModal(id, judul = '', pesan = '') {
                     this.templateId = id;
                     this.templateJudul = judul;
                     this.templatePesan = pesan;
                     this.showTemplateModal = true;
                 },
+
+                // Contact Group (Buku Alamat) Actions
                 pakaiKontak(nomor) {
                     let cleaned = parseWaContacts(nomor);
                     this.targetInput = cleaned.length > 0 ? cleaned.join('\n') : nomor;
@@ -1284,12 +1815,58 @@
                         behavior: 'smooth'
                     });
                 },
+
                 openContactModal(id, nama = '', nomor = '') {
                     this.contactId = id;
                     this.contactNamaGrup = nama;
                     this.contactNomor = nomor;
+                    this.contactNewNomor = '';
                     this.showContactModal = true;
                 },
+
+                get contactModalList() {
+                    return this.contactNomor ? this.contactNomor.split('\n').filter(i => i
+                        .trim() !== '') : [];
+                },
+
+                addContactModalNumbers(rawText) {
+                    let newContacts = parseWaContacts(rawText);
+                    let currentList = [...this.contactModalList];
+                    newContacts.forEach(contact => {
+                        if (!currentList.includes(contact)) {
+                            currentList.push(contact);
+                        }
+                    });
+                    this.contactNomor = currentList.join('\n');
+                    this.contactNewNomor = '';
+                },
+
+                removeContactModalNumber(index) {
+                    let currentList = [...this.contactModalList];
+                    currentList.splice(index, 1);
+                    this.contactNomor = currentList.join('\n');
+                },
+
+                handleContactModalPaste(e) {
+                    let pastedText = (e.clipboardData || window.clipboardData).getData('text');
+                    e.preventDefault();
+                    this.addContactModalNumbers(pastedText);
+                },
+
+                handleContactModalEnter(e) {
+                    if (this.contactNewNomor.trim() !== '') {
+                        e.preventDefault();
+                        this.addContactModalNumbers(this.contactNewNomor);
+                    }
+                },
+
+                prepareContactSubmit() {
+                    if (this.contactNewNomor && this.contactNewNomor.trim() !== '') {
+                        this.addContactModalNumbers(this.contactNewNomor);
+                    }
+                },
+
+                // Media & Formatting
                 previewImage(event) {
                     const file = event.target.files[0];
                     if (file) {
@@ -1301,6 +1878,23 @@
                         this.imageUrl = this.imageBase64 = null;
                     }
                 },
+
+                clearMedia() {
+                    this.imageUrl = null;
+                    this.imageBase64 = null;
+                    if (this.$refs.imageInput) {
+                        this.$refs.imageInput.value = '';
+                    }
+                },
+
+                clearMessageAndMedia() {
+                    this.pesanInput = '';
+                    this.clearMedia();
+                    if (this.$refs.pesanTextarea) {
+                        this.$refs.pesanTextarea.focus();
+                    }
+                },
+
                 insertFormat(char) {
                     const el = this.$refs.pesanTextarea;
                     const start = el.selectionStart,
@@ -1312,6 +1906,7 @@
                         el.setSelectionRange(end + 2, end + 2);
                     }, 10);
                 },
+
                 insertEmoji(e) {
                     const el = this.$refs.pesanTextarea;
                     const start = el.selectionStart;
@@ -1324,7 +1919,6 @@
                     }, 10);
                 },
 
-                // FUNGSI BARU: Spintax Generator
                 parseSpintax(text) {
                     return text.replace(/\[(.*?)\]/g, function(match, contents) {
                         var choices = contents.split('/');
@@ -1342,19 +1936,18 @@
                         }
                     }
                     let f = this.pesanInput.replace(/\{(?:nama|name)\}/gi, firstName);
-                    f = this.parseSpintax(f); // Terapkan Spintax di Live Preview
-                    f = f.replace(/\*(.*?)\*/g, '<strong>$1</strong>').replace(/_(.*?)_/g,
-                        '<em>$1</em>').replace(/~(.*?)~/g, '<del>$1</del>');
+                    f = this.parseSpintax(f);
+                    f = f.replace(/\*(.*?)\*/g, '<strong>$1</strong>')
+                        .replace(/_(.*?)_/g, '<em>$1</em>')
+                        .replace(/~(.*?)~/g, '<del>$1</del>');
                     return f.replace(/\n/g, '<br>');
                 },
 
                 async executeBlast() {
-                    // Otomatis masukkan input jika pengguna belum sempat menekan Enter
                     if (this.newTargetContact && this.newTargetContact.trim()) {
                         this.addTargetContacts(this.newTargetContact);
                     }
 
-                    // Pastikan seluruh kontak dalam targetInput selalu bersih dan ternormalisasi
                     if (this.targetInput && this.targetInput.trim()) {
                         let cleaned = parseWaContacts(this.targetInput);
                         if (cleaned.length > 0) {
@@ -1444,7 +2037,7 @@
                         this.showResult = false;
                     }
                 }
-            }))
-        })
+            }));
+        });
     </script>
 </x-app-layout>

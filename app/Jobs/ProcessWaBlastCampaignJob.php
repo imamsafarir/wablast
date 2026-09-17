@@ -114,9 +114,7 @@ class ProcessWaBlastCampaignJob implements ShouldQueue
                     ]);
                     $campaign->increment('success_count');
                 } else {
-                    $errorDetails = is_array($response['data'] ?? null)
-                        ? json_encode($response['data'])
-                        : (string) ($response['data'] ?? 'Gagal dikirim oleh WhatsApp Gateway');
+                    $errorDetails = EvolutionService::diagnoseAndFormatError($response['data'] ?? null, $cleanNumber, $evoService);
 
                     $recipient->update([
                         'status' => 'failed',
@@ -127,10 +125,12 @@ class ProcessWaBlastCampaignJob implements ShouldQueue
                 }
             } catch (\Throwable $e) {
                 Log::error("Error sending WA to {$cleanNumber}: ".$e->getMessage());
+                $errorDetails = EvolutionService::diagnoseAndFormatError($e->getMessage(), $cleanNumber, $evoService);
+
                 $recipient->update([
                     'status' => 'failed',
                     'sent_at' => now(),
-                    'error_message' => $e->getMessage(),
+                    'error_message' => $errorDetails,
                 ]);
                 $campaign->increment('failed_count');
             }

@@ -18,13 +18,13 @@
                         {{ __('Dashboard') }}
                     </x-nav-link>
                     <x-nav-link :href="route('wa.setting')" :active="request()->routeIs('wa.setting')">
-                        {{ __('Setting WA') }}
+                        {{ __('Setting') }}
                     </x-nav-link>
                     <x-nav-link :href="route('wa.blast')" :active="request()->routeIs('wa.blast')">
-                        {{ __('Kirim Blast') }}
+                        {{ __('Kirim') }}
                     </x-nav-link>
                     <x-nav-link :href="route('wa.logs')" :active="request()->routeIs('wa.logs')">
-                        {{ __('Log Aktivitas') }}
+                        {{ __('Log') }}
                     </x-nav-link>
                     @if (Auth::user()->isAdmin())
                         <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
@@ -95,13 +95,13 @@
                 {{ __('Dashboard') }}
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('wa.setting')" :active="request()->routeIs('wa.setting')">
-                {{ __('Setting WA') }}
+                {{ __('Setting') }}
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('wa.blast')" :active="request()->routeIs('wa.blast')">
-                {{ __('Kirim Blast') }}
+                {{ __('Kirim') }}
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('wa.logs')" :active="request()->routeIs('wa.logs')">
-                {{ __('Log Aktivitas') }}
+                {{ __('Log') }}
             </x-responsive-nav-link>
             @if (Auth::user()->isAdmin())
                 <x-responsive-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">

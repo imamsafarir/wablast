@@ -9,6 +9,7 @@ use App\Models\WaBlastLog;
 use App\Models\WaBlastRecipient;
 use App\Services\EvolutionService;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 
@@ -313,4 +314,119 @@ test('campaign completion logging is atomic and recorded exactly once per campai
 
     $log = WaBlastLog::where('user_id', $user->id)->first();
     expect($log->wa_instance)->toBe('cs_instance');
+});
+
+test('fetch group participants requires authentication and validates input', function () {
+    // Unauthenticated
+    $this->postJson(route('wa.group.participants'), [
+        'group_jid' => '120363231144288320@g.us',
+    ])->assertUnauthorized();
+
+    // Authenticated without group_jid
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    $this->postJson(route('wa.group.participants'), [])
+        ->assertStatus(422)
+        ->assertJson([
+            'success' => false,
+            'message' => 'Silakan pilih minimal satu grup WhatsApp.',
+        ]);
+});
+
+test('EvolutionService diagnoseAndFormatError produces clear user friendly messages', function () {
+    // 1. Group error with object Object
+    $groupError = ['status' => 400, 'response' => ['message' => ['[object Object]']]];
+    $msg1 = EvolutionService::diagnoseAndFormatError($groupError, '120363222649201158@g.us');
+    expect($msg1)->toContain('Gagal kirim ke grup');
+    expect($msg1)->not->toContain('[object Object]');
+
+    // 2. Personal number not registered
+    $numberError = ['response' => ['message' => ['Number exists: false']]];
+    $msg2 = EvolutionService::diagnoseAndFormatError($numberError, '62812345678');
+    expect($msg2)->toBe('Nomor telepon tujuan tidak terdaftar di WhatsApp.');
+
+    // 3. Group JID normalization
+    $dirtyJid = "  \"120363231144288320@g.us\"  \n";
+    expect(EvolutionService::normalizePhoneNumber($dirtyJid))->toBe('120363231144288320@g.us');
+});
+
+test('fetchAccountWaGroups scopes to user instance and returns disconnected state if instance is not open', function () {
+    $user = User::factory()->create([
+        'wa_instance_name' => 'test_user_instance',
+    ]);
+    $this->actingAs($user);
+
+    // Mock Evolution API connectionState endpoint to return 'close'
+    Http::fake([
+        '*/instance/connectionState/test_user_instance' => Http::response([
+            'instance' => ['state' => 'close'],
+        ], 200),
+    ]);
+
+    $response = $this->getJson(route('wa.account.groups'));
+
+    $response->assertOk()
+        ->assertJson([
+            'success' => true,
+            'groups' => [],
+            'instance' => 'test_user_instance',
+            'connected' => false,
+            'state' => 'close',
+        ]);
+});
+
+test('blast view renders user instance and connection state', function () {
+    $user = User::factory()->create([
+        'wa_instance_name' => 'fahri_custom_instance',
+    ]);
+    $this->actingAs($user);
+
+    Http::fake([
+        '*/instance/connectionState/fahri_custom_instance' => Http::response([
+            'instance' => ['state' => 'close'],
+        ], 200),
+    ]);
+
+    $response = $this->get(route('wa.blast'));
+
+    $response->assertOk()
+        ->assertViewHas('userInstance', 'fahri_custom_instance')
+        ->assertViewHas('isInstanceConnected', false)
+        ->assertSee('fahri_custom_instance');
+});
+
+test('fetchAccountWaGroups returns all groups from findChats without truncation when open', function () {
+    $user = User::factory()->create([
+        'wa_instance_name' => 'open_instance',
+    ]);
+    $this->actingAs($user);
+
+    Http::fake([
+        '*/instance/connectionState/open_instance' => Http::response([
+            'instance' => ['state' => 'open'],
+        ], 200),
+        '*/chat/findChats/open_instance' => Http::response([
+            ['remoteJid' => '120363001@g.us', 'pushName' => 'Grup A', 'updatedAt' => '2026-09-17T08:00:00.000Z'],
+            ['remoteJid' => '120363002@g.us', 'pushName' => 'Grup B', 'updatedAt' => '2026-09-17T09:00:00.000Z'],
+            ['remoteJid' => '62812345@s.whatsapp.net', 'pushName' => 'Kontak Pribadi'],
+        ], 200),
+        '*/group/fetchAllGroups/open_instance*' => Http::response([], 200),
+    ]);
+
+    $response = $this->getJson(route('wa.account.groups'));
+
+    $response->assertOk()
+        ->assertJson([
+            'success' => true,
+            'instance' => 'open_instance',
+            'connected' => true,
+            'state' => 'open',
+            'total' => 2,
+        ]);
+
+    $groups = $response->json('groups');
+    expect($groups)->toHaveCount(2);
+    expect($groups[0]['subject'])->toBe('Grup B');
+    expect($groups[1]['subject'])->toBe('Grup A');
 });
