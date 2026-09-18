@@ -51,9 +51,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/wa/blast/campaign/{id}', [WaController::class, 'showCampaign'])->name('wa.blast.campaign.show');
     Route::get('/wa/blast/campaign/{id}/failed-recipients', [WaController::class, 'getFailedRecipients'])->name('wa.blast.campaign.failed');
     Route::post('/wa/blast/campaign/{id}/retry', [WaController::class, 'retryFailedCampaign'])->name('wa.blast.campaign.retry');
+    Route::post('/wa/blast/campaign/{id}/pause', [WaController::class, 'pauseBlast'])->name('wa.blast.campaign.pause');
+    Route::post('/wa/blast/campaign/{id}/resume', [WaController::class, 'resumeBlast'])->name('wa.blast.campaign.resume');
 
     // Route Log Aktivitas Sistem
     Route::get('/wa/logs', [WaController::class, 'logs'])->name('wa.logs');
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

@@ -96,6 +96,76 @@ class EvolutionService
     }
 
     /**
+     * Memproses Spintax (variasi kata dinamis, misal: {Halo|Hai|Selamat Pagi})
+     */
+    public static function parseSpintax(string $text): string
+    {
+        $pattern = '/\{([^{}]+)\}/';
+        while (preg_match($pattern, $text)) {
+            $text = preg_replace_callback($pattern, function ($matches) {
+                $options = explode('|', $matches[1]);
+
+                return $options[array_rand($options)];
+            }, $text);
+        }
+
+        return $text;
+    }
+
+    /**
+     * Menyisipkan karakter tak kasat mata (Zero-Width) secara acak
+     * agar setiap pesan memiliki binary checksum / cryptographic hash yang unik di server WhatsApp.
+     */
+    public static function injectZeroWidthHash(string $text): string
+    {
+        $invisibleChars = ["\u{200B}", "\u{200C}", "\u{200D}"];
+        $words = explode(' ', $text);
+
+        foreach ($words as &$word) {
+            if (random_int(1, 3) === 1) {
+                $char = $invisibleChars[array_rand($invisibleChars)];
+                $word .= $char;
+            }
+        }
+        unset($word);
+
+        $result = implode(' ', $words);
+
+        // Tambahkan signature acak tak kasat mata di akhir pesan
+        $tailLength = random_int(2, 5);
+        for ($i = 0; $i < $tailLength; $i++) {
+            $result .= $invisibleChars[array_rand($invisibleChars)];
+        }
+
+        return $result;
+    }
+
+    /**
+     * Mengubah 1 byte checksum pada data media base64 agar MD5 selalu unik per kiriman
+     */
+    public static function randomizeMediaChecksum(string $base64): string
+    {
+        $raw = base64_decode($base64);
+        if ($raw === false || strlen($raw) < 10) {
+            return $base64;
+        }
+
+        $uniqueTail = "\x00" . bin2hex(random_bytes(4));
+
+        return base64_encode($raw . $uniqueTail);
+    }
+
+    /**
+     * Menambahkan footer opsi berhenti berlangganan (anti-report)
+     */
+    public static function appendOptOutFooter(string $text): string
+    {
+        $footer = "\n\n_Ketik *BATAL* jika Anda tidak ingin menerima pesan ini lagi._";
+
+        return rtrim($text) . $footer;
+    }
+
+    /**
      * Test connection to Evolution API
      */
     public static function testConnection(string $url, string $apiKey, string $instanceName): array

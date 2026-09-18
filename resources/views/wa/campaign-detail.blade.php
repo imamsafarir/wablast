@@ -18,8 +18,37 @@
                 </div>
             </div>
 
-            @if ($campaign->failed_count > 0)
-                <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2">
+                @if ($campaign->status === 'processing')
+                    <form action="{{ route('wa.blast.campaign.pause', $campaign->id) }}" method="POST">
+                        @csrf
+                        <button type="submit"
+                            class="bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 px-4 rounded-xl shadow-sm transition flex items-center gap-2 text-sm cursor-pointer">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            Jeda Pengiriman (Pause)
+                        </button>
+                    </form>
+                @elseif ($campaign->status === 'paused')
+                    <form action="{{ route('wa.blast.campaign.resume', $campaign->id) }}" method="POST">
+                        @csrf
+                        <button type="submit"
+                            class="bg-[#128C7E] hover:bg-[#0e6b60] text-white font-bold py-2.5 px-4 rounded-xl shadow-sm transition flex items-center gap-2 text-sm cursor-pointer">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z">
+                                </path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            Lanjutkan Pengiriman (Resume)
+                        </button>
+                    </form>
+                @endif
+
+                @if ($campaign->failed_count > 0)
                     <a href="{{ route('wa.blast', ['load_failed_campaign' => $campaign->id]) }}"
                         class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-4 rounded-xl shadow-sm transition flex items-center gap-2 text-sm">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -42,8 +71,8 @@
                             Langsung Kirim Ulang ({{ $campaign->failed_count }} Nomor)
                         </button>
                     </form>
-                </div>
-            @endif
+                @endif
+            </div>
         </div>
     </x-slot>
 
@@ -86,6 +115,11 @@
                                 class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800 animate-pulse">
                                 Sedang Mengirim...
                             </span>
+                        @elseif ($campaign->status === 'paused')
+                            <span
+                                class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800">
+                                ⏸️ Pengiriman Dijeda
+                            </span>
                         @elseif ($campaign->status === 'pending')
                             <span
                                 class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800">
@@ -100,6 +134,52 @@
                     </div>
                     <div class="text-xs text-gray-400 mt-2">
                         {{ $campaign->completed_at ? 'Selesai ' . $campaign->completed_at->diffForHumans() : 'Belum selesai' }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- INFO KEAMANAN & PENGATURAN ANTI-BAN -->
+            <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider flex items-center gap-2">
+                        <span class="text-emerald-600">🛡️</span> Konfigurasi Keamanan & Kecepatan Anti-Ban
+                    </h3>
+                    <span
+                        class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        Mode: {{ ucfirst(str_replace('_', ' ', $campaign->speed_mode ?? 'super_safe')) }}
+                    </span>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div class="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                        <span class="text-[11px] font-bold text-gray-500 block uppercase">Jeda Antar Pesan</span>
+                        <span class="text-sm font-bold text-gray-800">{{ $campaign->delay_min ?? 30 }} -
+                            {{ $campaign->delay_max ?? 60 }} Detik</span>
+                    </div>
+                    <div class="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                        <span class="text-[11px] font-bold text-gray-500 block uppercase">Jeda Batch (Cooldown)</span>
+                        <span class="text-sm font-bold text-gray-800">{{ $campaign->batch_cooldown ?? 180 }} dtk /
+                            {{ $campaign->batch_size ?? 20 }} pesan</span>
+                    </div>
+                    <div class="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                        <span class="text-[11px] font-bold text-gray-500 block uppercase">Zero-Width Hash</span>
+                        <span
+                            class="text-sm font-bold {{ $campaign->enable_zero_width_hash ?? true ? 'text-emerald-600' : 'text-gray-400' }}">
+                            {{ $campaign->enable_zero_width_hash ?? true ? '✅ Aktif' : '❌ Nonaktif' }}
+                        </span>
+                    </div>
+                    <div class="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                        <span class="text-[11px] font-bold text-gray-500 block uppercase">Spintax & Opt-Out</span>
+                        <div class="text-xs font-bold space-y-0.5 mt-0.5">
+                            <span
+                                class="{{ $campaign->enable_spintax ?? true ? 'text-emerald-600' : 'text-gray-400' }}">
+                                Spintax: {{ $campaign->enable_spintax ?? true ? 'Aktif' : 'Nonaktif' }}
+                            </span>
+                            <span class="text-gray-300 mx-1">|</span>
+                            <span
+                                class="{{ $campaign->enable_anti_report ?? false ? 'text-emerald-600' : 'text-gray-400' }}">
+                                Opt-out: {{ $campaign->enable_anti_report ?? false ? 'Aktif' : 'Nonaktif' }}
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>

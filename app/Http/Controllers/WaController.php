@@ -50,42 +50,42 @@ class WaController extends Controller
 
         $activeCampaigns = WaBlastCampaign::with('user')
             ->whereIn('status', ['pending', 'processing'])
-            ->when(! $isSuperAdmin, fn ($q) => $q->where('user_id', $user->id))
+            ->when(! $isSuperAdmin, fn($q) => $q->where('user_id', $user->id))
             ->latest()
             ->get();
 
         $totalRecipients = $isSuperAdmin
             ? WaBlastRecipient::count()
-            : WaBlastRecipient::whereHas('campaign', fn ($q) => $q->where('user_id', $user->id))->count();
+            : WaBlastRecipient::whereHas('campaign', fn($q) => $q->where('user_id', $user->id))->count();
 
         $successRecipients = $isSuperAdmin
             ? WaBlastRecipient::where('status', 'sent')->count()
-            : WaBlastRecipient::where('status', 'sent')->whereHas('campaign', fn ($q) => $q->where('user_id', $user->id))->count();
+            : WaBlastRecipient::where('status', 'sent')->whereHas('campaign', fn($q) => $q->where('user_id', $user->id))->count();
 
         $failedRecipients = $isSuperAdmin
             ? WaBlastRecipient::where('status', 'failed')->count()
-            : WaBlastRecipient::where('status', 'failed')->whereHas('campaign', fn ($q) => $q->where('user_id', $user->id))->count();
+            : WaBlastRecipient::where('status', 'failed')->whereHas('campaign', fn($q) => $q->where('user_id', $user->id))->count();
 
         $pendingRecipients = $isSuperAdmin
             ? WaBlastRecipient::whereIn('status', ['pending', 'sending'])->count()
-            : WaBlastRecipient::whereIn('status', ['pending', 'sending'])->whereHas('campaign', fn ($q) => $q->where('user_id', $user->id))->count();
+            : WaBlastRecipient::whereIn('status', ['pending', 'sending'])->whereHas('campaign', fn($q) => $q->where('user_id', $user->id))->count();
 
         $totalGroups = $isSuperAdmin
             ? WaContactGroup::count()
-            : WaContactGroup::where(fn ($q) => $q->where('user_id', $user->id)->orWhereNull('user_id'))->count();
+            : WaContactGroup::where(fn($q) => $q->where('user_id', $user->id)->orWhereNull('user_id'))->count();
 
         $totalTemplates = $isSuperAdmin
             ? WaTemplate::count()
-            : WaTemplate::where(fn ($q) => $q->where('user_id', $user->id)->orWhereNull('user_id'))->count();
+            : WaTemplate::where(fn($q) => $q->where('user_id', $user->id)->orWhereNull('user_id'))->count();
 
         $recentCampaigns = WaBlastCampaign::with('user')
-            ->when(! $isSuperAdmin, fn ($q) => $q->where('user_id', $user->id))
+            ->when(! $isSuperAdmin, fn($q) => $q->where('user_id', $user->id))
             ->latest()
             ->take(6)
             ->get();
 
         $recentLogs = ActivityLog::with('user')
-            ->when(! $isSuperAdmin, fn ($q) => $q->where('user_id', $user->id))
+            ->when(! $isSuperAdmin, fn($q) => $q->where('user_id', $user->id))
             ->latest()
             ->take(6)
             ->get();
@@ -303,20 +303,20 @@ class WaController extends Controller
         $instanceState = $evoService->getConnectionState();
         $isInstanceConnected = ($instanceState === 'open');
 
-        $templates = WaTemplate::when(! $isSuperAdmin, fn ($q) => $q->where(fn ($sub) => $sub->where('user_id', $user->id)->orWhereNull('user_id')))
+        $templates = WaTemplate::when(! $isSuperAdmin, fn($q) => $q->where(fn($sub) => $sub->where('user_id', $user->id)->orWhereNull('user_id')))
             ->latest()
             ->get();
 
-        $contactGroups = WaContactGroup::when(! $isSuperAdmin, fn ($q) => $q->where(fn ($sub) => $sub->where('user_id', $user->id)->orWhereNull('user_id')))
+        $contactGroups = WaContactGroup::when(! $isSuperAdmin, fn($q) => $q->where(fn($sub) => $sub->where('user_id', $user->id)->orWhereNull('user_id')))
             ->latest()
             ->get();
 
-        $campaigns = WaBlastCampaign::when(! $isSuperAdmin, fn ($q) => $q->where('user_id', $user->id))
+        $campaigns = WaBlastCampaign::when(! $isSuperAdmin, fn($q) => $q->where('user_id', $user->id))
             ->latest()
             ->take(10)
             ->get();
 
-        $logs = WaBlastLog::when(! $isSuperAdmin, fn ($q) => $q->where('user_id', $user->id))
+        $logs = WaBlastLog::when(! $isSuperAdmin, fn($q) => $q->where('user_id', $user->id))
             ->latest()
             ->take(10)
             ->get();
@@ -409,7 +409,7 @@ class WaController extends Controller
             'participants' => $allContacts,
             'groups' => $groupDetails,
             'failed_groups' => $failedGroups,
-            'message' => 'Berhasil menarik '.count($allContacts).' nomor kontak anggota dari '.count($groupDetails).' grup WhatsApp.',
+            'message' => 'Berhasil menarik ' . count($allContacts) . ' nomor kontak anggota dari ' . count($groupDetails) . ' grup WhatsApp.',
         ]);
     }
 
@@ -450,19 +450,45 @@ class WaController extends Controller
             $base64Data = preg_replace('#^data:image/\w+;base64,#i', '', $base64Image);
             $decoded = base64_decode($base64Data);
             if ($decoded !== false) {
-                $fileName = 'wa_blasts/'.uniqid('blast_', true).'.jpg';
+                $fileName = 'wa_blasts/' . uniqid('blast_', true) . '.jpg';
                 Storage::disk('public')->put($fileName, $decoded);
                 $mediaPath = $fileName;
             }
         }
 
         $pesanTemplate = $request->pesan;
-        $antiBot = $request->boolean('anti_bot');
+        $antiBot = $request->boolean('anti_bot', true);
+        $speedMode = $request->input('speed_mode', 'super_safe');
+        $delayMin = 30;
+        $delayMax = 60;
+        $batchSize = 20;
+        $batchCooldown = 180;
+
+        if ($speedMode === 'normal') {
+            $delayMin = 15;
+            $delayMax = 30;
+            $batchSize = 25;
+            $batchCooldown = 120;
+        } elseif ($speedMode === 'fast') {
+            $delayMin = 5;
+            $delayMax = 10;
+            $batchSize = 40;
+            $batchCooldown = 60;
+        } elseif ($speedMode === 'custom') {
+            $delayMin = max(1, (int) $request->input('delay_min', 30));
+            $delayMax = max($delayMin, (int) $request->input('delay_max', 60));
+            $batchSize = max(5, (int) $request->input('batch_size', 20));
+            $batchCooldown = max(10, (int) $request->input('batch_cooldown', 180));
+        }
+
+        $enableSpintax = $request->boolean('enable_spintax', true);
+        $enableZeroWidthHash = $request->boolean('enable_zero_width_hash', true);
+        $enableAntiReport = $request->boolean('enable_anti_report', false);
 
         // Buat Kampanye Blast
         $campaign = WaBlastCampaign::create([
             'user_id' => Auth::id(),
-            'judul' => 'Blast - '.now()->translatedFormat('d M Y H:i'),
+            'judul' => 'Blast - ' . now()->translatedFormat('d M Y H:i'),
             'pesan' => $pesanTemplate,
             'media_path' => $mediaPath,
             'total_target' => count($lines),
@@ -470,6 +496,14 @@ class WaController extends Controller
             'failed_count' => 0,
             'status' => 'pending',
             'anti_bot' => $antiBot,
+            'speed_mode' => $speedMode,
+            'delay_min' => $delayMin,
+            'delay_max' => $delayMax,
+            'batch_size' => $batchSize,
+            'batch_cooldown' => $batchCooldown,
+            'enable_spintax' => $enableSpintax,
+            'enable_zero_width_hash' => $enableZeroWidthHash,
+            'enable_anti_report' => $enableAntiReport,
         ]);
 
         // Buat detail penerima untuk kampanye ini
@@ -551,16 +585,13 @@ class WaController extends Controller
         self::ensureQueueWorkerRunning();
 
         $campaign = WaBlastCampaign::where('user_id', Auth::id())
-            ->whereIn('status', ['pending', 'processing'])
+            ->whereIn('status', ['pending', 'processing', 'paused'])
             ->latest()
             ->first();
 
         if (! $campaign) {
             return response()->json(['active' => false]);
         }
-
-        $this->processNextRecipientForCampaign($campaign);
-        $campaign->refresh();
 
         $processed = $campaign->success_count + $campaign->failed_count;
         $progress = $campaign->total_target > 0
@@ -577,24 +608,20 @@ class WaController extends Controller
                 'failed_count' => $campaign->failed_count,
                 'processed' => $processed,
                 'progress' => $progress,
+                'speed_mode' => $campaign->speed_mode ?? 'super_safe',
+                'is_paused' => $campaign->status === 'paused',
             ],
         ]);
     }
 
     /**
-     * Mengambil progres real-time kampanye tertentu untuk polling frontend
+     * Mengambil progres real-time kampanye tertentu untuk polling frontend (Read-Only)
      */
     public function getBlastProgress(int $id): JsonResponse
     {
         self::ensureQueueWorkerRunning();
 
         $campaign = WaBlastCampaign::findOrFail($id);
-
-        if (in_array($campaign->status, ['pending', 'processing'], true)) {
-            $this->processNextRecipientForCampaign($campaign);
-        }
-
-        $campaign->refresh();
 
         $processed = $campaign->success_count + $campaign->failed_count;
         $progress = $campaign->total_target > 0
@@ -609,7 +636,62 @@ class WaController extends Controller
             'failed_count' => $campaign->failed_count,
             'processed' => $processed,
             'progress' => $progress,
+            'speed_mode' => $campaign->speed_mode ?? 'super_safe',
+            'is_paused' => $campaign->status === 'paused',
             'completed' => in_array($campaign->status, ['completed', 'failed', 'cancelled'], true),
+        ]);
+    }
+
+    /**
+     * Menjeda (Pause) kampanye blast yang sedang berjalan
+     */
+    public function pauseBlast(int $id): JsonResponse
+    {
+        $campaign = WaBlastCampaign::where('user_id', Auth::id())->findOrFail($id);
+
+        if (in_array($campaign->status, ['pending', 'processing'], true)) {
+            $campaign->update(['status' => 'paused']);
+
+            ActivityLog::record(
+                action: 'blast_paused',
+                description: "Pengiriman kampanye blast #{$campaign->id} dijeda oleh pengguna.",
+                subject: $campaign,
+                userId: Auth::id()
+            );
+        }
+
+        return response()->json([
+            'success' => true,
+            'status' => $campaign->status,
+            'message' => 'Pengiriman blast berhasil dijeda sementara.',
+        ]);
+    }
+
+    /**
+     * Melanjutkan kembali (Resume) kampanye blast yang dijeda
+     */
+    public function resumeBlast(int $id): JsonResponse
+    {
+        $campaign = WaBlastCampaign::where('user_id', Auth::id())->findOrFail($id);
+
+        if ($campaign->status === 'paused') {
+            $campaign->update(['status' => 'processing']);
+
+            ActivityLog::record(
+                action: 'blast_resumed',
+                description: "Pengiriman kampanye blast #{$campaign->id} dilanjutkan kembali oleh pengguna.",
+                subject: $campaign,
+                userId: Auth::id()
+            );
+
+            ProcessWaBlastCampaignJob::dispatch($campaign->id);
+            self::ensureQueueWorkerRunning();
+        }
+
+        return response()->json([
+            'success' => true,
+            'status' => $campaign->status,
+            'message' => 'Pengiriman blast dilanjutkan kembali.',
         ]);
     }
 
@@ -722,7 +804,7 @@ class WaController extends Controller
                 $campaign->increment('failed_count');
             }
         } catch (\Throwable $e) {
-            Log::error("Error sending WA to {$cleanNumber}: ".$e->getMessage());
+            Log::error("Error sending WA to {$cleanNumber}: " . $e->getMessage());
             $errorDetails = EvolutionService::diagnoseAndFormatError($e->getMessage(), $cleanNumber, $evoService);
 
             $recipient->update([
@@ -853,7 +935,7 @@ class WaController extends Controller
 
         $newCampaign = WaBlastCampaign::create([
             'user_id' => Auth::id(),
-            'judul' => 'Retry Blast #'.$originalCampaign->id.' - '.now()->translatedFormat('d M H:i'),
+            'judul' => 'Retry Blast #' . $originalCampaign->id . ' - ' . now()->translatedFormat('d M H:i'),
             'pesan' => $originalCampaign->pesan,
             'media_path' => $originalCampaign->media_path,
             'total_target' => $failedRecipients->count(),
@@ -861,6 +943,14 @@ class WaController extends Controller
             'failed_count' => 0,
             'status' => 'pending',
             'anti_bot' => $originalCampaign->anti_bot,
+            'speed_mode' => $originalCampaign->speed_mode ?? 'super_safe',
+            'delay_min' => $originalCampaign->delay_min ?? 30,
+            'delay_max' => $originalCampaign->delay_max ?? 60,
+            'batch_size' => $originalCampaign->batch_size ?? 20,
+            'batch_cooldown' => $originalCampaign->batch_cooldown ?? 180,
+            'enable_spintax' => $originalCampaign->enable_spintax ?? true,
+            'enable_zero_width_hash' => $originalCampaign->enable_zero_width_hash ?? true,
+            'enable_anti_report' => $originalCampaign->enable_anti_report ?? false,
         ]);
 
         $recipientsData = [];
@@ -927,7 +1017,7 @@ class WaController extends Controller
                 }
             }
         } catch (\Throwable $e) {
-            Log::warning('Auto-queue worker trigger notice: '.$e->getMessage());
+            Log::warning('Auto-queue worker trigger notice: ' . $e->getMessage());
         }
     }
 
@@ -1087,13 +1177,13 @@ class WaController extends Controller
 
             ActivityLog::record(
                 action: 'contact_group_create',
-                description: 'Menyimpan '.count($saved)." grup WhatsApp ({$totalContactsAdded} kontak anggota) ke Buku Alamat.",
+                description: 'Menyimpan ' . count($saved) . " grup WhatsApp ({$totalContactsAdded} kontak anggota) ke Buku Alamat.",
                 properties: ['total_grup' => count($saved), 'total_kontak' => $totalContactsAdded]
             );
 
-            $msg = count($saved)." grup WhatsApp berhasil disimpan ke Buku Alamat dengan total {$totalContactsAdded} kontak anggota!";
+            $msg = count($saved) . " grup WhatsApp berhasil disimpan ke Buku Alamat dengan total {$totalContactsAdded} kontak anggota!";
             if (! empty($failedGroups)) {
-                $msg .= ' (Gagal memuat peserta dari '.count($failedGroups).' grup)';
+                $msg .= ' (Gagal memuat peserta dari ' . count($failedGroups) . ' grup)';
             }
 
             if ($request->expectsJson() || $request->ajax()) {
@@ -1390,7 +1480,7 @@ class WaController extends Controller
         if ($delimiter !== null) {
             $cells = array_values(array_filter(array_map(function ($c) {
                 return trim($c, " \t\n\r\0\x0B\"'");
-            }, explode($delimiter, $trimmed)), fn ($c) => $c !== ''));
+            }, explode($delimiter, $trimmed)), fn($c) => $c !== ''));
 
             $phoneIndex = -1;
             foreach ($cells as $idx => $cell) {
@@ -1435,7 +1525,7 @@ class WaController extends Controller
         if (empty($rawPhone)) {
             if (preg_match('/^(.*?)\(([\+?\d\s\-\.]{8,20})\)(.*?)$/', $trimmed, $m)) {
                 $rawPhone = trim($m[2]);
-                $nama = trim($m[1].' '.$m[3]);
+                $nama = trim($m[1] . ' ' . $m[3]);
             } elseif (preg_match('/^([^\:\-]+)[\:\-]\s*([\+?\d\s\-\.]{8,20})$/', $trimmed, $m)) {
                 $rawPhone = trim($m[2]);
                 $nama = trim($m[1]);
@@ -1444,7 +1534,7 @@ class WaController extends Controller
                 $nama = trim($m[2]);
             } elseif (preg_match('/^(.*?)((?:\+?62|0|8|9)\d[\d\s\-\.]{6,16}\d)(.*?)$/', $trimmed, $m)) {
                 $rawPhone = trim($m[2]);
-                $nama = trim($m[1].' '.$m[3]);
+                $nama = trim($m[1] . ' ' . $m[3]);
             }
         }
 

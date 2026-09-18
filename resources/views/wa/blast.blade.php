@@ -37,7 +37,8 @@
                         style="display: none;">
                         <div
                             class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md text-center transform scale-100 transition-all">
-                            <div
+                            <!-- Icon -->
+                            <div x-show="!isPaused"
                                 class="w-20 h-20 mx-auto mb-4 bg-emerald-50 rounded-full flex items-center justify-center">
                                 <svg class="w-10 h-10 text-[#128C7E] animate-spin" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10"
@@ -47,11 +48,27 @@
                                     </path>
                                 </svg>
                             </div>
-                            <h3 class="text-2xl font-bold text-gray-800 mb-2">Mengirim di Latar Belakang...</h3>
-                            <p class="text-sm text-gray-500 mb-6">Harap tunggu. <span x-text="sentCount"
-                                    class="font-bold text-gray-800"></span> dari <span x-text="totalTarget"
-                                    class="font-bold text-gray-800"></span> nomor selesai diproses.</p>
+                            <div x-show="isPaused"
+                                class="w-20 h-20 mx-auto mb-4 bg-amber-50 rounded-full flex items-center justify-center text-amber-500">
+                                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
 
+                            <!-- Title & Subtitle -->
+                            <h3 class="text-2xl font-bold text-gray-800 mb-1"
+                                x-text="isPaused ? 'Pengiriman Dijeda' : 'Mengirim di Latar Belakang...'"></h3>
+                            <p class="text-sm text-gray-500 mb-4" x-show="!isPaused">Harap tunggu. <span
+                                    x-text="sentCount" class="font-bold text-gray-800"></span> dari <span
+                                    x-text="totalTarget" class="font-bold text-gray-800"></span> nomor selesai diproses.
+                            </p>
+                            <p class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg py-1.5 px-3 mb-4 font-medium"
+                                x-show="isPaused">
+                                Antrean pesan dihentikan sementara. Klik tombol "Lanjutkan" untuk meneruskan pengiriman.
+                            </p>
+
+                            <!-- Progress bar -->
                             <div
                                 class="w-full bg-gray-100 rounded-full h-5 mb-4 overflow-hidden shadow-inner border border-gray-200">
                                 <div class="bg-gradient-to-r from-[#25D366] to-[#128C7E] h-5 rounded-full transition-all duration-300 relative flex items-center justify-end px-2"
@@ -62,6 +79,52 @@
                                     <span class="text-[10px] font-bold text-white relative z-10" x-show="progress > 10"
                                         x-text="`${progress}%`"></span>
                                 </div>
+                            </div>
+
+                            <!-- Chips Info -->
+                            <div class="grid grid-cols-3 gap-2 mb-4">
+                                <div class="p-2 bg-emerald-50 rounded-xl border border-emerald-100 text-center">
+                                    <span class="text-[10px] font-bold text-emerald-600 block uppercase">Berhasil</span>
+                                    <span class="text-base font-black text-emerald-700" x-text="berhasilCount"></span>
+                                </div>
+                                <div class="p-2 bg-rose-50 rounded-xl border border-rose-100 text-center">
+                                    <span class="text-[10px] font-bold text-rose-600 block uppercase">Gagal</span>
+                                    <span class="text-base font-black text-rose-600" x-text="gagalCount"></span>
+                                </div>
+                                <div class="p-2 bg-slate-50 rounded-xl border border-slate-200 text-center">
+                                    <span class="text-[10px] font-bold text-slate-600 block uppercase">Sisa</span>
+                                    <span class="text-base font-black text-slate-700"
+                                        x-text="Math.max(0, totalTarget - sentCount)"></span>
+                                </div>
+                            </div>
+
+                            <!-- Tombol Pause / Resume -->
+                            <div class="mb-4">
+                                <template x-if="!isPaused">
+                                    <button type="button" @click="pauseCampaign()" :disabled="isActionLoading"
+                                        class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 px-4 rounded-xl transition shadow-sm flex items-center justify-center gap-2 text-sm cursor-pointer disabled:opacity-50">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        <span
+                                            x-text="isActionLoading ? 'Memproses...' : 'Jeda Pengiriman Sementara'"></span>
+                                    </button>
+                                </template>
+                                <template x-if="isPaused">
+                                    <button type="button" @click="resumeCampaign()" :disabled="isActionLoading"
+                                        class="w-full bg-[#128C7E] hover:bg-[#0e6b60] text-white font-bold py-2.5 px-4 rounded-xl transition shadow-sm flex items-center justify-center gap-2 text-sm cursor-pointer disabled:opacity-50">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z">
+                                            </path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        <span
+                                            x-text="isActionLoading ? 'Memproses...' : 'Lanjutkan Pengiriman'"></span>
+                                    </button>
+                                </template>
                             </div>
 
                             <div
@@ -88,18 +151,30 @@
                         style="display: none;">
                         <div class="flex items-center gap-3">
                             <div class="relative flex items-center justify-center w-8 h-8 shrink-0">
-                                <svg class="w-8 h-8 text-[#25D366] animate-spin" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10"
-                                        stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor"
-                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-                                    </path>
-                                </svg>
+                                <template x-if="!isPaused">
+                                    <svg class="w-8 h-8 text-[#25D366] animate-spin" fill="none"
+                                        viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10"
+                                            stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor"
+                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                        </path>
+                                    </svg>
+                                </template>
+                                <template x-if="isPaused">
+                                    <svg class="w-7 h-7 text-amber-400" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                </template>
                             </div>
                             <div>
-                                <div class="text-xs font-bold text-gray-100 flex items-center gap-1.5">
-                                    <span>Pengiriman Blast Aktif</span>
-                                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                                <div class="text-xs font-bold flex items-center gap-1.5"
+                                    :class="isPaused ? 'text-amber-400' : 'text-gray-100'">
+                                    <span x-text="isPaused ? 'Pengiriman Dijeda' : 'Pengiriman Blast Aktif'"></span>
+                                    <span class="w-2 h-2 rounded-full"
+                                        :class="isPaused ? 'bg-amber-400' : 'bg-emerald-400 animate-pulse'"></span>
                                 </div>
                                 <div class="text-[11px] text-gray-300">
                                     <span x-text="sentCount" class="font-bold text-white"></span> / <span
@@ -121,8 +196,8 @@
                         <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md text-center">
                             <div class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5"
                                 :class="gagalCount > 0 ? 'bg-amber-100 text-amber-500' : 'bg-emerald-100 text-[#128C7E]'">
-                                <svg x-show="gagalCount === 0" class="w-10 h-10" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
+                                <svg x-show="gagalCount === 0" class="w-10 h-10" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M5 13l4 4L19 7"></path>
                                 </svg>
@@ -855,28 +930,271 @@
                         </div>
                     </div>
 
-                    <!-- TOMBOL SUBMIT & ANTI BOT -->
-                    <div class="space-y-4">
-                        <label
-                            class="flex items-center gap-3 p-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl cursor-pointer hover:bg-emerald-50 transition-colors">
-                            <input type="checkbox" x-model="antiBot"
-                                class="w-5 h-5 text-[#128C7E] rounded-md focus:ring-[#128C7E] border-emerald-300">
-                            <div>
-                                <span class="text-sm font-bold text-emerald-800 block">Gunakan Mode Anti-Bot
-                                    (Anti-Banned)</span>
-                                <span class="text-[11px] text-emerald-600 font-medium">Sistem akan memberi jeda acak
-                                    2-6 detik antar pesan seolah diketik manusia.</span>
+                    <!-- PENGATURAN PENGIRIMAN & ANTI-BAN -->
+                    <div
+                        class="bg-white shadow-sm sm:rounded-2xl border border-gray-100 overflow-hidden group hover:shadow-md transition-all duration-300">
+                        <div
+                            class="bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-transparent px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <span
+                                    class="bg-[#128C7E] text-white w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold shadow-sm">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z">
+                                        </path>
+                                    </svg>
+                                </span>
+                                <div>
+                                    <h3 class="font-bold text-gray-800 text-lg">Kecepatan & Proteksi Anti-Ban</h3>
+                                    <p class="text-xs text-gray-500">Lindungi nomor WhatsApp Anda agar tidak dibatasi
+                                        atau diblokir oleh Meta</p>
+                                </div>
                             </div>
-                        </label>
+                            <span
+                                class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                🛡️ Smart Shield
+                            </span>
+                        </div>
 
-                        <button type="button" @click="executeBlast()"
-                            class="w-full bg-[#128C7E] hover:bg-[#075e54] text-white font-bold py-4 px-4 rounded-2xl shadow-sm transition-all flex justify-center items-center gap-2 text-[15px]">
-                            <svg class="w-5 h-5 ml-1" fill="none" stroke="currentColor" stroke-width="2"
-                                viewBox="0 0 24 24">
+                        <div class="p-6 space-y-6">
+                            <!-- 1. Pilihan Mode Kecepatan -->
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-3">
+                                    Pilih Profil Kecepatan Pengiriman
+                                </label>
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <!-- Super Safe Card -->
+                                    <div @click="setSpeedMode('super_safe')"
+                                        :class="speedMode === 'super_safe' ?
+                                            'border-[#128C7E] bg-emerald-50/50 ring-2 ring-[#128C7E]/20 shadow-sm' :
+                                            'border-gray-200 hover:border-gray-300 bg-white'"
+                                        class="cursor-pointer p-4 rounded-xl border-2 transition-all relative">
+                                        <div class="flex items-center justify-between mb-1.5">
+                                            <span
+                                                class="text-xs font-black text-emerald-700 uppercase tracking-wider flex items-center gap-1">
+                                                🛡️ Super Aman
+                                            </span>
+                                            <span
+                                                class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">Rekomendasi</span>
+                                        </div>
+                                        <div class="text-sm font-bold text-gray-800 mb-1">30 - 60 Detik / Pesan</div>
+                                        <div class="text-[11px] text-gray-500 leading-tight">
+                                            Jeda istirahat 3 menit tiap 20 pesan. Sangat alami menyerupai interaksi
+                                            manusia.
+                                        </div>
+                                    </div>
+
+                                    <!-- Normal Card -->
+                                    <div @click="setSpeedMode('normal')"
+                                        :class="speedMode === 'normal' ?
+                                            'border-[#128C7E] bg-emerald-50/50 ring-2 ring-[#128C7E]/20 shadow-sm' :
+                                            'border-gray-200 hover:border-gray-300 bg-white'"
+                                        class="cursor-pointer p-4 rounded-xl border-2 transition-all relative">
+                                        <div class="flex items-center justify-between mb-1.5">
+                                            <span
+                                                class="text-xs font-black text-teal-700 uppercase tracking-wider flex items-center gap-1">
+                                                ☕ Normal / Santai
+                                            </span>
+                                        </div>
+                                        <div class="text-sm font-bold text-gray-800 mb-1">15 - 30 Detik / Pesan</div>
+                                        <div class="text-[11px] text-gray-500 leading-tight">
+                                            Jeda istirahat 2 menit tiap 25 pesan. Cocok untuk blast rutin berkala.
+                                        </div>
+                                    </div>
+
+                                    <!-- Fast Card -->
+                                    <div @click="setSpeedMode('fast')"
+                                        :class="speedMode === 'fast' ?
+                                            'border-amber-500 bg-amber-50/50 ring-2 ring-amber-500/20 shadow-sm' :
+                                            'border-gray-200 hover:border-gray-300 bg-white'"
+                                        class="cursor-pointer p-4 rounded-xl border-2 transition-all relative">
+                                        <div class="flex items-center justify-between mb-1.5">
+                                            <span
+                                                class="text-xs font-black text-amber-700 uppercase tracking-wider flex items-center gap-1">
+                                                ⚡ Cepat (Risiko)
+                                            </span>
+                                            <span
+                                                class="text-[10px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded">Agresif</span>
+                                        </div>
+                                        <div class="text-sm font-bold text-gray-800 mb-1">5 - 10 Detik / Pesan</div>
+                                        <div class="text-[11px] text-gray-500 leading-tight">
+                                            Jeda istirahat 1 menit tiap 40 pesan. Berisiko jika nomor baru.
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Tombol Kustom -->
+                                <div class="mt-3 flex justify-end">
+                                    <button type="button"
+                                        @click="setSpeedMode(speedMode === 'custom' ? 'super_safe' : 'custom')"
+                                        class="text-xs text-gray-600 hover:text-[#128C7E] font-medium flex items-center gap-1 cursor-pointer">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
+                                            </path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        </svg>
+                                        <span
+                                            x-text="speedMode === 'custom' ? 'Kembali ke Mode Rekomendasi' : 'Atur Parameter Delay & Batch Manual'"></span>
+                                    </button>
+                                </div>
+
+                                <!-- Form Pengaturan Kustom (Collapse) -->
+                                <div x-show="speedMode === 'custom'" x-collapse
+                                    class="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                                    <h4 class="text-xs font-bold text-gray-700 uppercase tracking-wider mb-3">
+                                        Pengaturan Parameter Manual</h4>
+                                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                        <div>
+                                            <label class="block text-[11px] font-semibold text-gray-600 mb-1">Min Delay
+                                                (detik)</label>
+                                            <input type="number" min="2" max="300"
+                                                x-model.number="delayMin"
+                                                class="w-full text-xs font-medium rounded-lg border-gray-300 focus:border-[#128C7E] focus:ring-[#128C7E]">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[11px] font-semibold text-gray-600 mb-1">Max Delay
+                                                (detik)</label>
+                                            <input type="number" min="3" max="600"
+                                                x-model.number="delayMax"
+                                                class="w-full text-xs font-medium rounded-lg border-gray-300 focus:border-[#128C7E] focus:ring-[#128C7E]">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[11px] font-semibold text-gray-600 mb-1">Ukuran
+                                                Batch (pesan)</label>
+                                            <input type="number" min="5" max="100"
+                                                x-model.number="batchSize"
+                                                class="w-full text-xs font-medium rounded-lg border-gray-300 focus:border-[#128C7E] focus:ring-[#128C7E]">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[11px] font-semibold text-gray-600 mb-1">Cooldown
+                                                Batch (detik)</label>
+                                            <input type="number" min="10" max="1800"
+                                                x-model.number="batchCooldown"
+                                                class="w-full text-xs font-medium rounded-lg border-gray-300 focus:border-[#128C7E] focus:ring-[#128C7E]">
+                                        </div>
+                                    </div>
+                                    <p class="text-[11px] text-gray-500 mt-2">
+                                        💡 Sistem akan jeda acak antara <strong x-text="delayMin"></strong>s s/d
+                                        <strong x-text="delayMax"></strong>s per pesan, dan beristirahat selama <strong
+                                            x-text="batchCooldown"></strong>s setiap kelipatan <strong
+                                            x-text="batchSize"></strong> pesan terkirim.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- 2. Fitur Proteksi Algoritma Anti-Ban -->
+                            <div class="border-t border-gray-100 pt-4 space-y-3">
+                                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                                    Teknologi Penyamaran & Keamanan Tambahan
+                                </label>
+
+                                <!-- Zero-Width Invisible Hash -->
+                                <label
+                                    class="flex items-start gap-3 p-3 rounded-xl border border-gray-200 hover:bg-gray-50 transition cursor-pointer">
+                                    <input type="checkbox" x-model="enableZeroWidthHash"
+                                        class="w-4 h-4 mt-0.5 text-[#128C7E] rounded focus:ring-[#128C7E] border-gray-300">
+                                    <div class="flex-1">
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-xs font-bold text-gray-800">Hash Siluman Anti-Deteksi
+                                                Massal (Zero-Width Hash)</span>
+                                            <span
+                                                class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">Aktif</span>
+                                        </div>
+                                        <p class="text-[11px] text-gray-500 mt-0.5">
+                                            Menyisipkan karakter biner tak kasat mata unik di setiap pesan sehingga
+                                            sistem Meta/WhatsApp mendeteksi setiap pesan sebagai teks unik yang berbeda
+                                            (bukan pesan blast kembar).
+                                        </p>
+                                    </div>
+                                </label>
+
+                                <!-- Spintax Parsing -->
+                                <label
+                                    class="flex items-start gap-3 p-3 rounded-xl border border-gray-200 hover:bg-gray-50 transition cursor-pointer">
+                                    <input type="checkbox" x-model="enableSpintax"
+                                        class="w-4 h-4 mt-0.5 text-[#128C7E] rounded focus:ring-[#128C7E] border-gray-300">
+                                    <div class="flex-1">
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-xs font-bold text-gray-800">Variasi Kata Otomatis
+                                                (Spintax Parser)</span>
+                                        </div>
+                                        <p class="text-[11px] text-gray-500 mt-0.5">
+                                            Mendukung format variasi kata seperti <code
+                                                class="text-emerald-700 font-bold bg-emerald-50 px-1 py-0.5 rounded">{Halo|Hai|Selamat
+                                                pagi}</code> agar setiap kontak menerima susunan kata acak yang natural.
+                                        </p>
+                                    </div>
+                                </label>
+
+                                <!-- Anti-Report Footer -->
+                                <label
+                                    class="flex items-start gap-3 p-3 rounded-xl border border-gray-200 hover:bg-gray-50 transition cursor-pointer">
+                                    <input type="checkbox" x-model="enableAntiReport"
+                                        class="w-4 h-4 mt-0.5 text-[#128C7E] rounded focus:ring-[#128C7E] border-gray-300">
+                                    <div class="flex-1">
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-xs font-bold text-gray-800">Sertakan Catatan Unsubscribe
+                                                / Opt-Out</span>
+                                            <span
+                                                class="text-[10px] bg-slate-100 text-slate-700 font-bold px-1.5 py-0.5 rounded">Cegah
+                                                Lapor Spam</span>
+                                        </div>
+                                        <p class="text-[11px] text-gray-500 mt-0.5">
+                                            Menambahkan catatan ramah di bawah pesan: <em>"Ketik BATAL jika Anda tidak
+                                                ingin menerima info ini lagi"</em> agar penerima tidak menekan tombol
+                                            lapor/blokir WhatsApp.
+                                        </p>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <!-- 3. Estimasi Durasi & Circuit Breaker Info -->
+                            <div
+                                class="bg-gradient-to-r from-teal-50/80 to-emerald-50/80 border border-teal-200/80 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-10 h-10 rounded-full bg-teal-100 text-[#128C7E] flex items-center justify-center shrink-0">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs font-bold text-gray-800">
+                                            Estimasi Durasi Pengiriman: <span class="text-[#128C7E]"
+                                                x-text="estimatedDurationText"></span>
+                                        </div>
+                                        <div class="text-[11px] text-gray-500">
+                                            Untuk <span class="font-bold text-gray-700" x-text="targetCount"></span>
+                                            nomor target. Berjalan di queue server (bebas tutup browser).
+                                        </div>
+                                    </div>
+                                </div>
+                                <div
+                                    class="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-800 bg-white/80 px-2.5 py-1.5 rounded-lg border border-emerald-200 shrink-0">
+                                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    Circuit Breaker Aktif (Auto-Pause darurat)
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TOMBOL EKSEKUSI BLAST -->
+                    <div>
+                        <button type="button" @click="executeBlast()" :disabled="isSending"
+                            class="w-full bg-gradient-to-r from-[#128C7E] to-[#0e6b60] hover:from-[#0e6b60] hover:to-[#075e54] text-white font-extrabold py-4 px-6 rounded-2xl shadow-lg hover:shadow-xl transition-all flex justify-center items-center gap-3 text-base cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                            <svg class="w-6 h-6 animate-bounce" fill="none" stroke="currentColor"
+                                stroke-width="2" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round"
                                     d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"></path>
                             </svg>
-                            Mulai Kirim Blast
+                            <span>Mulai Kirim Blast WhatsApp</span>
+                            <span class="bg-white/20 text-white text-xs px-2.5 py-1 rounded-full font-bold"
+                                x-text="targetCount + ' Target'"></span>
                         </button>
                     </div>
                 </div>
@@ -1275,8 +1593,8 @@
                             <span class="text-gray-300">|</span>
                             <button type="button" @click="fetchAccountGroups(true)" :disabled="isLoadingGroups"
                                 class="text-xs text-blue-600 hover:text-blue-800 font-semibold inline-flex items-center gap-1">
-                                <svg class="w-3.5 h-3.5" :class="{ 'animate-spin': isLoadingGroups }" fill="none"
-                                    stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-3.5 h-3.5" :class="{ 'animate-spin': isLoadingGroups }"
+                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
                                     </path>
@@ -1291,7 +1609,8 @@
                         <template x-if="isLoadingGroups">
                             <div
                                 class="py-12 text-center text-xs text-gray-500 flex flex-col items-center justify-center gap-2">
-                                <svg class="w-6 h-6 animate-spin text-[#128C7E]" fill="none" viewBox="0 0 24 24">
+                                <svg class="w-6 h-6 animate-spin text-[#128C7E]" fill="none"
+                                    viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10"
                                         stroke="currentColor" stroke-width="4"></circle>
                                     <path class="opacity-75" fill="currentColor"
@@ -1362,8 +1681,8 @@
                                 :disabled="selectedGroupIds.length === 0 || isBulkSavingAddressBook"
                                 class="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-[#128C7E] hover:bg-[#075e54] text-white text-xs font-bold transition shadow-md disabled:opacity-40 inline-flex items-center justify-center gap-1.5"
                                 title="Ekstrak kontak anggota dari seluruh grup terpilih dan simpan ke Buku Alamat">
-                                <svg x-show="isBulkSavingAddressBook" class="w-3.5 h-3.5 animate-spin" fill="none"
-                                    viewBox="0 0 24 24">
+                                <svg x-show="isBulkSavingAddressBook" class="w-3.5 h-3.5 animate-spin"
+                                    fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10"
                                         stroke="currentColor" stroke-width="4"></circle>
                                     <path class="opacity-75" fill="currentColor"
@@ -1698,7 +2017,55 @@
                 newTargetContact: '',
                 imageUrl: null,
                 imageBase64: null,
-                antiBot: true, // Default tercentang
+                antiBot: true,
+                speedMode: 'super_safe', // 'super_safe' | 'normal' | 'fast' | 'custom'
+                delayMin: 30,
+                delayMax: 60,
+                batchSize: 20,
+                batchCooldown: 180,
+                enableSpintax: true,
+                enableZeroWidthHash: true,
+                enableAntiReport: false,
+                isPaused: false,
+                isActionLoading: false,
+
+                setSpeedMode(mode) {
+                    this.speedMode = mode;
+                    if (mode === 'super_safe') {
+                        this.delayMin = 30;
+                        this.delayMax = 60;
+                        this.batchSize = 20;
+                        this.batchCooldown = 180;
+                    } else if (mode === 'normal') {
+                        this.delayMin = 15;
+                        this.delayMax = 30;
+                        this.batchSize = 25;
+                        this.batchCooldown = 120;
+                    } else if (mode === 'fast') {
+                        this.delayMin = 5;
+                        this.delayMax = 10;
+                        this.batchSize = 40;
+                        this.batchCooldown = 60;
+                    }
+                },
+
+                get estimatedDurationText() {
+                    let count = this.targetCount;
+                    if (!count || count <= 0) return '0 menit';
+                    let avgDelay = ((this.delayMin || 30) + (this.delayMax || 60)) / 2;
+                    let batches = Math.floor(count / (this.batchSize || 20));
+                    let totalSec = Math.round((count * avgDelay) + (batches * (this.batchCooldown ||
+                        0)));
+                    if (totalSec < 60) return `${totalSec} detik`;
+                    let mins = Math.floor(totalSec / 60);
+                    let remSec = totalSec % 60;
+                    if (mins < 60) {
+                        return `± ${mins} menit ${remSec > 0 ? remSec + ' dtk' : ''}`;
+                    }
+                    let hours = Math.floor(mins / 60);
+                    let remMin = mins % 60;
+                    return `± ${hours} jam ${remMin} menit`;
+                },
 
                 // Fitur Tarik Grup WhatsApp Instance (Dropdown)
                 userInstance: '{{ $userInstance }}',
@@ -1793,6 +2160,8 @@
                             this.progress = data.campaign.progress;
                             this.berhasilCount = data.campaign.success_count;
                             this.gagalCount = data.campaign.failed_count;
+                            this.isPaused = (data.campaign.status === 'paused' || data.campaign
+                                .is_paused === true);
                             this.isSending = true;
                             this.hideSendingModal = true;
                             this.startPolling(data.campaign.id);
@@ -2321,6 +2690,7 @@
                     this.totalTarget = this.targetCount;
                     this.berhasilCount = 0;
                     this.gagalCount = 0;
+                    this.isPaused = false;
 
                     try {
                         let req = await fetch('{{ route('wa.blast.start') }}', {
@@ -2333,7 +2703,15 @@
                                 targets: this.targetInput,
                                 pesan: this.pesanInput,
                                 gambar_base64: this.imageBase64,
-                                anti_bot: this.antiBot
+                                anti_bot: true,
+                                speed_mode: this.speedMode,
+                                delay_min: this.delayMin,
+                                delay_max: this.delayMax,
+                                batch_size: this.batchSize,
+                                batch_cooldown: this.batchCooldown,
+                                enable_spintax: this.enableSpintax,
+                                enable_zero_width_hash: this.enableZeroWidthHash,
+                                enable_anti_report: this.enableAntiReport
                             })
                         });
                         let res = await req.json();
@@ -2370,6 +2748,8 @@
                             this.totalTarget = statusData.total_target;
                             this.berhasilCount = statusData.success_count;
                             this.gagalCount = statusData.failed_count;
+                            this.isPaused = (statusData.status === 'paused' || statusData
+                                .is_paused === true);
 
                             if (statusData.completed) {
                                 clearInterval(this.pollTimer);
@@ -2384,6 +2764,58 @@
                             console.error('Polling error', e);
                         }
                     }, 2000);
+                },
+
+                async pauseCampaign() {
+                    if (!this.currentCampaignId || this.isActionLoading) return;
+                    this.isActionLoading = true;
+                    try {
+                        let res = await fetch(
+                        `/wa/blast/campaign/${this.currentCampaignId}/pause`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            }
+                        });
+                        let data = await res.json();
+                        if (data.success) {
+                            this.isPaused = true;
+                        } else {
+                            alert(data.message || 'Gagal menjeda pengiriman.');
+                        }
+                    } catch (e) {
+                        console.error('Error pausing campaign', e);
+                        alert('Gagal menghubungi server untuk menjeda pengiriman.');
+                    } finally {
+                        this.isActionLoading = false;
+                    }
+                },
+
+                async resumeCampaign() {
+                    if (!this.currentCampaignId || this.isActionLoading) return;
+                    this.isActionLoading = true;
+                    try {
+                        let res = await fetch(
+                        `/wa/blast/campaign/${this.currentCampaignId}/resume`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            }
+                        });
+                        let data = await res.json();
+                        if (data.success) {
+                            this.isPaused = false;
+                        } else {
+                            alert(data.message || 'Gagal melanjutkan pengiriman.');
+                        }
+                    } catch (e) {
+                        console.error('Error resuming campaign', e);
+                        alert('Gagal menghubungi server untuk melanjutkan pengiriman.');
+                    } finally {
+                        this.isActionLoading = false;
+                    }
                 },
 
                 retryFailed() {

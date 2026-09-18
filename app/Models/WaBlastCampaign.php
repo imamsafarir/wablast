@@ -14,6 +14,13 @@ class WaBlastCampaign extends Model
     {
         return [
             'anti_bot' => 'boolean',
+            'delay_min' => 'integer',
+            'delay_max' => 'integer',
+            'batch_size' => 'integer',
+            'batch_cooldown' => 'integer',
+            'enable_spintax' => 'boolean',
+            'enable_zero_width_hash' => 'boolean',
+            'enable_anti_report' => 'boolean',
             'completed_at' => 'datetime',
         ];
     }
