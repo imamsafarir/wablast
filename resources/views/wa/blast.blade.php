@@ -274,15 +274,20 @@
                                     </svg>
                                     <span>Bersihkan</span>
                                 </button>
-                                <a href="#section-kontak"
-                                    class="text-xs font-bold text-[#128C7E] bg-emerald-50 border border-emerald-100 px-4 py-2 rounded-full hover:bg-[#128C7E] hover:text-white transition-all flex items-center gap-2 shadow-sm">
+                                <!-- Tombol Buka Modal Pilih Buku Alamat Cepat -->
+                                <button type="button" @click="openQuickAddressBookModal()"
+                                    class="inline-flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-full border transition-all duration-200 text-[#128C7E] hover:text-white bg-emerald-50 hover:bg-[#128C7E] border-emerald-200 shadow-2xs cursor-pointer"
+                                    title="Pilih satu atau lebih buku alamat untuk dimasukkan ke target kontak">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253">
                                         </path>
                                     </svg>
-                                    Buku Alamat
-                                </a>
+                                    <span>Pilih Buku Alamat</span>
+                                    <span
+                                        class="bg-white/90 text-emerald-800 text-[10px] font-extrabold px-1.5 py-0.5 rounded-full border border-emerald-200 shadow-2xs"
+                                        x-text="contactGroups.length"></span>
+                                </button>
                             </div>
                         </div>
                         <div class="p-6">
@@ -1349,16 +1354,22 @@
             </div>
 
             <!-- BAGIAN BAWAH: BUKU ALAMAT (GRUP KONTAK) -->
-            <div id="section-kontak" class="mt-8 bg-white shadow-sm sm:rounded-2xl border border-gray-100 p-8 mb-10">
+            <div id="section-kontak"
+                class="mt-8 bg-white shadow-sm sm:rounded-2xl border border-gray-100 p-6 sm:p-8 mb-10">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                     <div>
-                        <h3 class="text-xl font-bold text-gray-800">📖 Buku Alamat (Grup Kontak)</h3>
-                        <p class="text-sm text-gray-500 mt-1">Kelola database nomor target Anda dengan mudah.</p>
+                        <div class="flex items-center gap-2.5">
+                            <h3 class="text-xl font-bold text-gray-800">📖 Buku Alamat (Grup Kontak)</h3>
+                            <span class="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-0.5 rounded-full"
+                                x-text="contactGroups.length + ' Grup'"></span>
+                        </div>
+                        <p class="text-sm text-gray-500 mt-1">Kelola database nomor target Anda dan pilih banyak grup
+                            sekaligus untuk pengiriman blast.</p>
                     </div>
                     <div class="flex flex-wrap items-center gap-3">
                         <!-- Tombol Pilih dari Grup WhatsApp -->
                         <button type="button" @click="openWaGroupPickerModal()"
-                            class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-4 py-2.5 rounded-xl text-sm font-bold shadow-2xs transition-all flex items-center gap-2">
+                            class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-4 py-2.5 rounded-xl text-sm font-bold shadow-2xs transition-all flex items-center gap-2 cursor-pointer">
                             <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor"
                                 viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -1370,7 +1381,7 @@
 
                         <!-- Tombol Tambah Manual -->
                         <button @click="openContactModal(null)"
-                            class="bg-[#128C7E] hover:bg-[#075e54] text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md shadow-emerald-500/20 transition-all flex items-center gap-2">
+                            class="bg-[#128C7E] hover:bg-[#075e54] text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md shadow-emerald-500/20 transition-all flex items-center gap-2 cursor-pointer">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M12 4v16m8-8H4">
@@ -1380,17 +1391,116 @@
                     </div>
                 </div>
 
+                <!-- FILTER SEARCH & SELECTION TOOLBAR -->
+                <div
+                    class="mb-6 p-4 bg-gray-50/80 rounded-2xl border border-gray-200/80 flex flex-col md:flex-row items-center justify-between gap-3">
+                    <div class="relative w-full md:w-80">
+                        <svg class="w-4 h-4 text-gray-400 absolute left-3 top-3" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                        <input type="text" x-model="searchContactGroup" placeholder="Cari nama buku alamat..."
+                            class="w-full pl-9 pr-8 py-2 text-xs rounded-xl border-gray-300 focus:border-[#128C7E] focus:ring-[#128C7E] bg-white">
+                        <button type="button" x-show="searchContactGroup" @click="searchContactGroup = ''"
+                            class="absolute right-2.5 top-2.5 text-gray-400 hover:text-gray-600">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center gap-2 w-full md:w-auto justify-end flex-wrap">
+                        <button type="button" @click="selectAllContactGroups()"
+                            class="text-xs font-semibold text-emerald-700 bg-white hover:bg-emerald-50 px-3 py-2 rounded-xl border border-emerald-200 shadow-2xs transition cursor-pointer">
+                            Pilih Semua
+                        </button>
+                        <button type="button" @click="deselectAllContactGroups()"
+                            :disabled="selectedContactGroupIds.length === 0"
+                            class="text-xs font-semibold text-gray-600 bg-white hover:bg-gray-100 px-3 py-2 rounded-xl border border-gray-200 shadow-2xs transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">
+                            Batal Pilih
+                        </button>
+                    </div>
+                </div>
+
+                <!-- FLOATING / STICKY BULK ACTION BAR -->
+                <div x-show="selectedContactGroupIds.length > 0" x-transition
+                    class="sticky top-4 z-30 mb-6 bg-gradient-to-r from-emerald-900 via-teal-900 to-gray-900 text-white p-4 sm:p-5 rounded-2xl shadow-xl border border-emerald-700/50 flex flex-col md:flex-row items-center justify-between gap-4 backdrop-blur-md">
+                    <div class="flex items-center gap-3.5">
+                        <span
+                            class="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-300 font-bold shrink-0">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </span>
+                        <div>
+                            <div
+                                class="text-sm sm:text-base font-bold text-emerald-100 flex items-center gap-2 flex-wrap">
+                                <span x-text="selectedContactGroupIds.length + ' Buku Alamat Terpilih'"></span>
+                                <span
+                                    class="bg-emerald-500/30 text-emerald-300 text-xs font-mono px-2.5 py-0.5 rounded-full border border-emerald-400/30"
+                                    x-text="selectedContactGroupsUniqueContacts.length + ' Kontak Unik'"></span>
+                            </div>
+                            <div class="text-xs text-gray-300 mt-0.5">
+                                Masukkan kontak terpilih ke daftar kontak target pesan blast.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2.5 w-full md:w-auto flex-wrap">
+                        <button type="button" @click="applySelectedContactGroups('append')"
+                            class="flex-1 sm:flex-none bg-[#25D366] hover:bg-[#1ebd5b] text-gray-950 text-xs font-black px-4 py-2.5 rounded-xl transition shadow-md flex items-center justify-center gap-1.5 cursor-pointer">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 4v16m8-8H4"></path>
+                            </svg>
+                            <span>Gabungkan ke Target</span>
+                        </button>
+
+                        <button type="button" @click="applySelectedContactGroups('replace')"
+                            class="flex-1 sm:flex-none bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition shadow-md flex items-center justify-center gap-1.5 cursor-pointer">
+                            <span>Ganti Target</span>
+                        </button>
+
+                        <button type="button" @click="deselectAllContactGroups()"
+                            class="text-xs text-gray-400 hover:text-white px-2.5 py-2 transition cursor-pointer"
+                            title="Batalkan pilihan">
+                            Batal
+                        </button>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                     @foreach ($contactGroups as $grup)
-                        <div
-                            class="border border-blue-100 rounded-2xl p-5 shadow-sm hover:shadow-lg transition-all duration-300 bg-gradient-to-b from-blue-50/40 to-white flex flex-col justify-between">
+                        <div x-show="!searchContactGroup || '{{ strtolower(addslashes($grup->nama_grup)) }}'.includes(searchContactGroup.toLowerCase())"
+                            :class="isContactGroupSelected({{ $grup->id }}) ?
+                                'border-emerald-500 ring-2 ring-emerald-500/30 bg-emerald-50/40 shadow-md' :
+                                'border-blue-100 hover:border-blue-300 bg-gradient-to-b from-blue-50/40 to-white'"
+                            class="border rounded-2xl p-5 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between relative group">
                             <div>
-                                <div class="flex justify-between items-start mb-3">
-                                    <h4 class="font-bold text-lg text-blue-900">{{ $grup->nama_grup }}</h4>
-                                    <span
-                                        class="bg-blue-100 text-blue-800 text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm">
-                                        {{ count(explode("\n", trim($grup->nomor))) }} Kontak
-                                    </span>
+                                <div class="flex justify-between items-start mb-3 gap-2">
+                                    <div class="flex items-start gap-2.5 min-w-0">
+                                        <input type="checkbox" :value="{{ $grup->id }}"
+                                            :checked="isContactGroupSelected({{ $grup->id }})"
+                                            @click.stop="toggleContactGroupSelection({{ $grup->id }})"
+                                            class="w-4 h-4 mt-1 text-[#128C7E] rounded focus:ring-[#128C7E] border-gray-300 cursor-pointer">
+                                        <h4 class="font-bold text-lg text-blue-900 leading-snug cursor-pointer select-none"
+                                            @click="toggleContactGroupSelection({{ $grup->id }})">
+                                            {{ $grup->nama_grup }}
+                                        </h4>
+                                    </div>
+                                    <div class="flex items-center gap-1.5 shrink-0">
+                                        <span x-show="isContactGroupSelected({{ $grup->id }})"
+                                            class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-md border border-emerald-200">
+                                            Terpilih
+                                        </span>
+                                        <span
+                                            class="bg-blue-100 text-blue-800 text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm">
+                                            {{ count(explode("\n", trim($grup->nomor))) }} Kontak
+                                        </span>
+                                    </div>
                                 </div>
                                 <p
                                     class="text-[13px] text-gray-500 font-mono line-clamp-3 mb-5 whitespace-pre-line bg-white/50 p-2 rounded-lg border border-blue-50">
@@ -1399,15 +1509,16 @@
                             </div>
                             <div class="flex justify-between gap-2 border-t border-gray-100 pt-4">
                                 <button @click="pakaiKontak(`{{ addslashes($grup->nomor) }}`)"
-                                    class="flex-1 text-sm bg-emerald-50 text-[#128C7E] px-3 py-2 rounded-lg hover:bg-[#128C7E] hover:text-white font-bold transition-colors">Gunakan</button>
+                                    class="flex-1 text-sm bg-emerald-50 text-[#128C7E] px-3 py-2 rounded-lg hover:bg-[#128C7E] hover:text-white font-bold transition-colors cursor-pointer"
+                                    title="Gunakan grup kontak ini langsung ke target pesan">Gunakan</button>
                                 <button
                                     @click="openContactModal({{ $grup->id }}, `{{ addslashes($grup->nama_grup) }}`, `{{ addslashes($grup->nomor) }}`)"
-                                    class="text-sm bg-amber-50 text-amber-600 px-4 py-2 rounded-lg hover:bg-amber-500 hover:text-white font-bold transition-colors">Edit</button>
+                                    class="text-sm bg-amber-50 text-amber-600 px-4 py-2 rounded-lg hover:bg-amber-500 hover:text-white font-bold transition-colors cursor-pointer">Edit</button>
                                 <form action="{{ route('wa.contact.delete', $grup->id) }}" method="POST"
                                     onsubmit="return confirm('Yakin ingin menghapus grup kontak ini?');">
                                     @csrf @method('DELETE')
                                     <button type="submit"
-                                        class="text-sm bg-red-50 text-red-600 px-4 py-2 rounded-lg hover:bg-red-500 hover:text-white font-bold transition-colors">Hapus</button>
+                                        class="text-sm bg-red-50 text-red-600 px-4 py-2 rounded-lg hover:bg-red-500 hover:text-white font-bold transition-colors cursor-pointer">Hapus</button>
                                 </form>
                             </div>
                         </div>
@@ -1445,7 +1556,8 @@
                     <form :action="contactId ? `/wa/contact-group/${contactId}` : '{{ route('wa.contact.store') }}'"
                         method="POST" @submit="prepareContactSubmit()">
                         @csrf
-                        <template x-if="contactId"><input type="hidden" name="_method" value="PUT"></template>
+                        <template x-if="contactId"><input type="hidden" name="_method"
+                                value="PUT"></template>
 
                         <div class="mb-5">
                             <div class="flex justify-between items-center mb-2">
@@ -1542,6 +1654,141 @@
                             </button>
                         </div>
                     </form>
+                </div>
+            </div>
+
+            <!-- MODAL PILIH BANYAK BUKU ALAMAT (QUICK MULTI-SELECT PICKER) -->
+            <div x-show="showQuickAddressBookModal" x-transition
+                class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/70 backdrop-blur-sm p-4"
+                style="display: none;">
+                <div @click.away="showQuickAddressBookModal = false"
+                    class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden border border-gray-100 transform transition-all">
+
+                    <!-- Modal Header -->
+                    <div
+                        class="px-6 py-5 bg-gradient-to-r from-emerald-50 via-teal-50/40 to-white border-b border-gray-100 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <span
+                                class="w-10 h-10 rounded-2xl bg-[#128C7E] text-white flex items-center justify-center shadow-md shadow-emerald-600/20 shrink-0">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253">
+                                    </path>
+                                </svg>
+                            </span>
+                            <div>
+                                <h3 class="text-lg font-bold text-gray-800">Pilih dari Buku Alamat</h3>
+                                <p class="text-xs text-gray-500">Centang satu atau lebih buku alamat untuk dimasukkan
+                                    ke target pesan.</p>
+                            </div>
+                        </div>
+                        <button type="button" @click="showQuickAddressBookModal = false"
+                            class="text-gray-400 hover:text-gray-600 p-2 rounded-xl hover:bg-gray-100 transition cursor-pointer">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Search & Quick Selection Controls -->
+                    <div
+                        class="p-4 bg-gray-50/80 border-b border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+                        <div class="relative w-full sm:w-72">
+                            <svg class="w-4 h-4 text-gray-400 absolute left-3 top-3" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                            <input type="text" x-model="searchContactGroup" placeholder="Cari buku alamat..."
+                                class="w-full pl-9 pr-3 py-2 text-xs rounded-xl border-gray-200 focus:border-[#128C7E] focus:ring-[#128C7E] bg-white">
+                        </div>
+                        <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                            <button type="button" @click="selectAllContactGroups()"
+                                class="text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-200 transition cursor-pointer">
+                                Pilih Semua
+                            </button>
+                            <button type="button" @click="deselectAllContactGroups()"
+                                :disabled="selectedContactGroupIds.length === 0"
+                                class="text-xs font-semibold text-gray-600 bg-white hover:bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">
+                                Batal Pilih
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- List of Address Books with Checkboxes -->
+                    <div class="flex-1 overflow-y-auto p-4 space-y-2 max-h-96">
+                        <template x-for="grup in filteredContactGroups" :key="grup.id">
+                            <div @click="toggleContactGroupSelection(grup.id)"
+                                :class="isContactGroupSelected(grup.id) ?
+                                    'border-[#128C7E] bg-emerald-50/50 ring-1 ring-[#128C7E]/40' :
+                                    'border-gray-200 hover:border-gray-300 bg-white'"
+                                class="p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 group">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <input type="checkbox" :value="grup.id"
+                                        :checked="isContactGroupSelected(grup.id)"
+                                        @click.stop="toggleContactGroupSelection(grup.id)"
+                                        class="w-4 h-4 text-[#128C7E] rounded focus:ring-[#128C7E] border-gray-300 cursor-pointer">
+                                    <div class="min-w-0">
+                                        <div class="text-sm font-bold text-gray-800 truncate"
+                                            x-text="grup.nama_grup"></div>
+                                        <div class="text-[11px] text-gray-500 font-mono truncate"
+                                            x-text="grup.nomor.split('\n').slice(0, 2).join(', ') + (grup.nomor.split('\n').length > 2 ? '...' : '')">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2 shrink-0">
+                                    <span class="text-xs font-bold px-2.5 py-1 rounded-full"
+                                        :class="isContactGroupSelected(grup.id) ? 'bg-[#128C7E] text-white' :
+                                            'bg-gray-100 text-gray-600'">
+                                        <span x-text="grup.count"></span> Kontak
+                                    </span>
+                                </div>
+                            </div>
+                        </template>
+
+                        <template x-if="filteredContactGroups.length === 0">
+                            <div class="text-center py-8 text-gray-400 text-sm">
+                                Tidak ada buku alamat yang cocok dengan pencarian.
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Modal Footer & Action Buttons -->
+                    <div
+                        class="p-5 bg-gray-50 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div class="text-xs text-gray-600 w-full sm:w-auto text-center sm:text-left">
+                            <span class="font-bold text-gray-800" x-text="selectedContactGroupIds.length"></span>
+                            buku alamat terpilih
+                            (<span class="font-bold text-[#128C7E]"
+                                x-text="selectedContactGroupsUniqueContacts.length"></span> kontak unik)
+                        </div>
+
+                        <div class="flex items-center gap-2 w-full sm:w-auto">
+                            <!-- Append Button -->
+                            <button type="button" @click="applySelectedContactGroups('append')"
+                                :disabled="selectedContactGroupIds.length === 0"
+                                class="flex-1 sm:flex-none bg-[#128C7E] hover:bg-[#0e6b60] text-white text-xs font-bold px-4 py-2.5 rounded-xl transition shadow-sm flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 4v16m8-8H4"></path>
+                                </svg>
+                                <span>+ Gabung ke Target</span>
+                            </button>
+
+                            <!-- Replace Button -->
+                            <button type="button" @click="applySelectedContactGroups('replace')"
+                                :disabled="selectedContactGroupIds.length === 0"
+                                class="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition shadow-sm flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                                    </path>
+                                </svg>
+                                <span>Ganti Target</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -2111,6 +2358,12 @@
                 contactNomor: '',
                 contactNewNomor: '',
 
+                // Multi-Select Buku Alamat (Grup Kontak)
+                contactGroups: @json($contactGroups),
+                selectedContactGroupIds: [],
+                searchContactGroup: '',
+                showQuickAddressBookModal: false,
+
                 init() {
                     this.checkActiveCampaign();
                     this.checkUrlParams();
@@ -2531,7 +2784,107 @@
                     this.showTemplateModal = true;
                 },
 
-                // Contact Group (Buku Alamat) Actions
+                // Contact Group (Buku Alamat) Multi-Select Actions
+                openQuickAddressBookModal() {
+                    this.searchContactGroup = '';
+                    this.showQuickAddressBookModal = true;
+                },
+
+                get filteredContactGroups() {
+                    if (!this.searchContactGroup || !this.searchContactGroup.trim()) {
+                        return this.contactGroups;
+                    }
+                    let q = this.searchContactGroup.toLowerCase().trim();
+                    return this.contactGroups.filter(g => g.nama_grup.toLowerCase().includes(q));
+                },
+
+                toggleContactGroupSelection(id) {
+                    const idx = this.selectedContactGroupIds.indexOf(id);
+                    if (idx > -1) {
+                        this.selectedContactGroupIds.splice(idx, 1);
+                    } else {
+                        this.selectedContactGroupIds.push(id);
+                    }
+                },
+
+                isContactGroupSelected(id) {
+                    return this.selectedContactGroupIds.includes(id);
+                },
+
+                selectAllContactGroups() {
+                    this.selectedContactGroupIds = this.filteredContactGroups.map(g => g.id);
+                },
+
+                deselectAllContactGroups() {
+                    this.selectedContactGroupIds = [];
+                },
+
+                get selectedContactGroupsUniqueContacts() {
+                    if (this.selectedContactGroupIds.length === 0) return [];
+                    let allRaw = [];
+                    this.contactGroups.forEach(g => {
+                        if (this.selectedContactGroupIds.includes(g.id) && g.nomor) {
+                            let lines = g.nomor.split('\n').map(l => l.trim()).filter(l =>
+                                l !== '');
+                            allRaw.push(...lines);
+                        }
+                    });
+                    return parseWaContacts(allRaw.join('\n'));
+                },
+
+                applySelectedContactGroups(mode = 'append') {
+                    let newContacts = this.selectedContactGroupsUniqueContacts;
+                    if (newContacts.length === 0) {
+                        alert('Pilih setidaknya satu buku alamat yang memiliki kontak.');
+                        return;
+                    }
+
+                    if (mode === 'replace') {
+                        this.targetInput = newContacts.join('\n');
+                    } else {
+                        // Mode append: merge with existing targetInput, deduplicating by normalized phone
+                        let existing = parseWaContacts(this.targetInput || '');
+                        let existingPhones = new Set();
+                        existing.forEach(c => {
+                            let phone = c.includes(' - ') ? c.split(' - ')[1].trim() : c.trim();
+                            existingPhones.add(normalizeWaPhone(phone));
+                        });
+
+                        let toAdd = [];
+                        newContacts.forEach(c => {
+                            let phone = c.includes(' - ') ? c.split(' - ')[1].trim() : c.trim();
+                            let norm = normalizeWaPhone(phone);
+                            if (!existingPhones.has(norm)) {
+                                existingPhones.add(norm);
+                                toAdd.push(c);
+                            }
+                        });
+
+                        let combined = [...existing, ...toAdd];
+                        this.targetInput = combined.join('\n');
+                    }
+
+                    this.showQuickAddressBookModal = false;
+
+                    // Smooth scroll to target textarea
+                    setTimeout(() => {
+                        const targetElem = document.querySelector(
+                            'textarea[x-model="targetInput"]');
+                        if (targetElem) {
+                            targetElem.scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'center'
+                            });
+                            targetElem.focus();
+                        } else {
+                            window.scrollTo({
+                                top: 0,
+                                behavior: 'smooth'
+                            });
+                        }
+                    }, 100);
+                },
+
                 pakaiKontak(nomor) {
                     let cleaned = parseWaContacts(nomor);
                     this.targetInput = cleaned.length > 0 ? cleaned.join('\n') : nomor;
@@ -2771,13 +3124,13 @@
                     this.isActionLoading = true;
                     try {
                         let res = await fetch(
-                        `/wa/blast/campaign/${this.currentCampaignId}/pause`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                            }
-                        });
+                            `/wa/blast/campaign/${this.currentCampaignId}/pause`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                }
+                            });
                         let data = await res.json();
                         if (data.success) {
                             this.isPaused = true;
@@ -2797,13 +3150,13 @@
                     this.isActionLoading = true;
                     try {
                         let res = await fetch(
-                        `/wa/blast/campaign/${this.currentCampaignId}/resume`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                            }
-                        });
+                            `/wa/blast/campaign/${this.currentCampaignId}/resume`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                }
+                            });
                         let data = await res.json();
                         if (data.success) {
                             this.isPaused = false;
