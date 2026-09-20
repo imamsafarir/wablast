@@ -1188,6 +1188,25 @@
                         </div>
                     </div>
 
+                    <!-- PERINGATAN WHATSAPP BELUM TERHUBUNG -->
+                    <div x-show="!isInstanceConnected" x-transition
+                        class="mb-4 p-4 bg-rose-50 border border-rose-200 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-rose-800 shadow-sm">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-3 h-3 rounded-full bg-rose-500 animate-pulse shrink-0"></span>
+                            <span>WhatsApp pada instance <strong class="font-bold text-rose-900"
+                                    x-text="userInstance"></strong> belum terhubung. Hubungkan terlebih dahulu agar
+                                pengiriman dapat berjalan.</span>
+                        </div>
+                        <a href="{{ route('wa.setting') }}"
+                            class="shrink-0 inline-flex items-center gap-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition shadow-xs">
+                            <span>Hubungkan WhatsApp</span>
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                            </svg>
+                        </a>
+                    </div>
+
                     <!-- TOMBOL EKSEKUSI BLAST -->
                     <div>
                         <button type="button" @click="executeBlast()" :disabled="isSending"
@@ -1733,7 +1752,7 @@
                                         <div class="text-sm font-bold text-gray-800 truncate"
                                             x-text="grup.nama_grup"></div>
                                         <div class="text-[11px] text-gray-500 font-mono truncate"
-                                            x-text="grup.nomor.split('\n').slice(0, 2).join(', ') + (grup.nomor.split('\n').length > 2 ? '...' : '')">
+                                            x-text="(grup.nomor || '').split('\n').slice(0, 2).join(', ') + ((grup.nomor || '').split('\n').length > 2 ? '...' : '')">
                                         </div>
                                     </div>
                                 </div>
@@ -2130,6 +2149,12 @@
                         useGrouping: false
                     });
                 }
+            }
+
+            // Dukungan JID Grup WhatsApp (@g.us)
+            if (s.includes('@g.us')) {
+                let m = s.match(/([0-9\-]+@g\.us)/i);
+                return m ? m[1] : s;
             }
 
             let clean = s.replace(/\D/g, '');
@@ -2824,8 +2849,9 @@
                     let allRaw = [];
                     this.contactGroups.forEach(g => {
                         if (this.selectedContactGroupIds.includes(g.id) && g.nomor) {
-                            let lines = g.nomor.split('\n').map(l => l.trim()).filter(l =>
-                                l !== '');
+                            let lines = (g.nomor || '').split('\n').map(l => l.trim())
+                                .filter(l =>
+                                    l !== '');
                             allRaw.push(...lines);
                         }
                     });
@@ -3037,6 +3063,15 @@
                         return alert('Target & Pesan wajib diisi!');
                     }
 
+                    if (!this.isInstanceConnected) {
+                        if (confirm(
+                                `WhatsApp pada instance "${this.userInstance}" belum terhubung!\n\nApakah Anda ingin membuka menu Pengaturan untuk menghubungkan akun WhatsApp (Scan QR Code)?`
+                                )) {
+                            window.location.href = '{{ route('wa.setting') }}';
+                        }
+                        return;
+                    }
+
                     this.isSending = true;
                     this.hideSendingModal = false;
                     this.sentCount = this.progress = 0;
@@ -3073,6 +3108,9 @@
                             this.isSending = false;
                             this.hideSendingModal = false;
                             alert(res.message || 'Gagal memulai pengiriman.');
+                            if (res.is_disconnected) {
+                                window.location.href = '{{ route('wa.setting') }}';
+                            }
                             return;
                         }
 

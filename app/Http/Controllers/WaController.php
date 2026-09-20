@@ -425,6 +425,18 @@ class WaController extends Controller
             'anti_bot' => 'nullable',
         ]);
 
+        // Validasi koneksi WhatsApp sebelum memulai pengiriman
+        $user = Auth::user();
+        $evoService = $this->getEvoService($user);
+        $instanceState = $evoService->getConnectionState();
+        if ($instanceState !== 'open') {
+            return response()->json([
+                'success' => false,
+                'is_disconnected' => true,
+                'message' => "WhatsApp pada instance '{$evoService->getInstanceName()}' belum terhubung (Status: " . ucfirst($instanceState) . '). Silakan hubungkan WhatsApp Anda di menu Pengaturan terlebih dahulu.',
+            ], 422);
+        }
+
         $targetsRaw = $request->targets;
         if (is_string($targetsRaw)) {
             $lines = array_filter(array_map('trim', explode("\n", str_replace("\r", '', $targetsRaw))));
@@ -619,9 +631,27 @@ class WaController extends Controller
      */
     public function getBlastProgress(int $id): JsonResponse
     {
-        self::ensureQueueWorkerRunning();
-
         $campaign = WaBlastCampaign::findOrFail($id);
+
+        // Jika kampanye masih berjalan, pastikan worker queue aktif
+        if (in_array($campaign->status, ['pending', 'processing'], true)) {
+            self::ensureQueueWorkerRunning();
+
+            // Fail-safe Inline Processor: jika queue worker tidak aktif (misal di Windows / Herd),
+            // polling frontend secara otomatis memproses penerima berikutnya sesuai jeda anti-ban
+            $lastRecipientActivity = $campaign->recipients()
+                ->whereIn('status', ['sent', 'failed', 'sending'])
+                ->orderBy('updated_at', 'desc')
+                ->value('updated_at');
+
+            $minDelay = max(2, (int) ($campaign->delay_min ?: 5));
+            $isDue = ! $lastRecipientActivity || now()->diffInSeconds($lastRecipientActivity) >= $minDelay;
+
+            if ($isDue) {
+                $this->processNextRecipientForCampaign($campaign);
+                $campaign->refresh();
+            }
+        }
 
         $processed = $campaign->success_count + $campaign->failed_count;
         $progress = $campaign->total_target > 0
@@ -770,20 +800,54 @@ class WaController extends Controller
             $campaign->update(['status' => 'processing']);
         }
 
+        $cleanNumber = EvolutionService::normalizePhoneNumber($recipient->nomor);
+
+        // Cek apakah nomor ada di daftar Blacklist / opt-out
+        $isBlacklisted = WaBlacklist::where(function ($q) use ($campaign) {
+            $q->whereNull('user_id')->orWhere('user_id', $campaign->user_id);
+        })->where('nomor', $cleanNumber)->exists();
+
+        if ($isBlacklisted) {
+            $recipient->update([
+                'status' => 'failed',
+                'sent_at' => now(),
+                'error_message' => 'Nomor ada di daftar Blacklist / meminta berhenti berlangganan (Dilewati).',
+            ]);
+            $campaign->increment('failed_count');
+
+            return $recipient;
+        }
+
         $mediaBase64 = null;
         if ($campaign->media_path && Storage::disk('public')->exists($campaign->media_path)) {
             $fileContent = Storage::disk('public')->get($campaign->media_path);
             $mediaBase64 = base64_encode($fileContent);
         }
 
-        $cleanNumber = EvolutionService::normalizePhoneNumber($recipient->nomor);
+        // Transformasi Pesan Anti-Banned
+        $personalMessage = $recipient->pesan_personal ?: $campaign->pesan;
+        if ($campaign->enable_spintax) {
+            $personalMessage = EvolutionService::parseSpintax($personalMessage);
+        }
+        if ($campaign->enable_anti_report) {
+            $personalMessage = EvolutionService::appendOptOutFooter($personalMessage);
+        }
+        if ($campaign->enable_zero_width_hash) {
+            $personalMessage = EvolutionService::injectZeroWidthHash($personalMessage);
+        }
+
+        $currentMediaBase64 = $mediaBase64;
+        if ($mediaBase64 && $campaign->enable_zero_width_hash) {
+            $currentMediaBase64 = EvolutionService::randomizeMediaChecksum($mediaBase64);
+        }
+
         $evoService = $this->getEvoService($campaign->user);
 
         try {
-            if ($mediaBase64) {
-                $response = $evoService->sendMedia($cleanNumber, $recipient->pesan_personal, $mediaBase64);
+            if ($currentMediaBase64) {
+                $response = $evoService->sendMedia($cleanNumber, $personalMessage, $currentMediaBase64);
             } else {
-                $response = $evoService->sendMessage($cleanNumber, $recipient->pesan_personal);
+                $response = $evoService->sendMessage($cleanNumber, $personalMessage);
             }
 
             if ($response['is_success']) {
@@ -813,6 +877,25 @@ class WaController extends Controller
                 'error_message' => $errorDetails,
             ]);
             $campaign->increment('failed_count');
+        }
+
+        // Smart Circuit Breaker: jika 4 kegagalan beruntun, otomatis pause
+        $recentRecipients = $campaign->recipients()
+            ->whereIn('status', ['sent', 'failed'])
+            ->orderBy('id', 'desc')
+            ->take(4)
+            ->get();
+        if ($recentRecipients->count() === 4 && $recentRecipients->every(fn($r) => $r->status === 'failed')) {
+            $campaign->update(['status' => 'paused']);
+            ActivityLog::record(
+                action: 'blast_circuit_breaker',
+                description: "Smart Circuit Breaker aktif! Kampanye #{$campaign->id} otomatis di-PAUSE karena terjadi 4 kegagalan beruntun untuk melindungi nomor WhatsApp Anda dari pemblokiran.",
+                subject: $campaign,
+                properties: [
+                    'last_error' => $errorDetails ?? 'Unknown error',
+                ],
+                userId: $campaign->user_id
+            );
         }
 
         $campaign->refresh();
@@ -1008,9 +1091,26 @@ class WaController extends Controller
             if ($hasPendingJobs) {
                 $artisan = base_path('artisan');
                 $php = PHP_BINARY ?: 'php';
+
+                // Pada Windows / Herd FastCGI, PHP_BINARY sering menunjuk ke php-cgi.exe yang tidak dapat menjalankan CLI artisan
+                if (str_ends_with(strtolower($php), 'php-cgi.exe')) {
+                    $cliPhp = substr($php, 0, -11) . 'php.exe';
+                    if (file_exists($cliPhp)) {
+                        $php = $cliPhp;
+                    }
+                } elseif (str_ends_with(strtolower($php), 'php-cgi')) {
+                    $cliPhp = substr($php, 0, -7) . 'php.exe';
+                    if (file_exists($cliPhp)) {
+                        $php = $cliPhp;
+                    }
+                }
+
                 if (str_contains(PHP_OS_FAMILY, 'Windows')) {
-                    $cmd = sprintf('start "" /B "%s" "%s" queue:work --stop-when-empty --tries=1 > NUL 2>&1', $php, $artisan);
-                    pclose(popen($cmd, 'r'));
+                    $cmd = sprintf('start /min "" "%s" "%s" queue:work --stop-when-empty --tries=1', $php, $artisan);
+                    $handle = popen($cmd, 'r');
+                    if ($handle) {
+                        pclose($handle);
+                    }
                 } else {
                     $cmd = sprintf('"%s" "%s" queue:work --stop-when-empty --tries=1 > /dev/null 2>&1 &', $php, $artisan);
                     exec($cmd);
