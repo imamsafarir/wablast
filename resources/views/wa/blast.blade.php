@@ -116,8 +116,14 @@
                                         </path>
                                     </svg>
                                     <div class="min-w-0 flex-1 leading-tight">
-                                        <span class="font-bold text-emerald-950 block">Mengirim pesan ke
-                                            WhatsApp...</span>
+                                        <div class="flex items-center justify-between gap-1">
+                                            <span class="font-bold text-emerald-950 block"
+                                                x-text="enableTypingSimulation ? 'Simulasi mengetik & mengirim...' : 'Mengirim pesan ke WhatsApp...'"></span>
+                                            <template x-if="speedMode === 'warmup'">
+                                                <span
+                                                    class="text-[9px] bg-amber-200 text-amber-900 font-bold px-1.5 py-0.5 rounded">Pemanasan</span>
+                                            </template>
+                                        </div>
                                         <span class="text-[11px] text-emerald-700 truncate block"
                                             x-show="nextRecipient">
                                             Target: <strong
@@ -1053,7 +1059,28 @@
                                 <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-3">
                                     Pilih Profil Kecepatan Pengiriman
                                 </label>
-                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                                    <!-- Warmup Card (Pemulihan Pasca-Banned) -->
+                                    <div @click="setSpeedMode('warmup')"
+                                        :class="speedMode === 'warmup' ?
+                                            'border-amber-500 bg-amber-50/70 ring-2 ring-amber-500/30 shadow-sm' :
+                                            'border-gray-200 hover:border-amber-300 bg-white'"
+                                        class="cursor-pointer p-4 rounded-xl border-2 transition-all relative">
+                                        <div class="flex items-center justify-between mb-1.5">
+                                            <span
+                                                class="text-xs font-black text-amber-800 uppercase tracking-wider flex items-center gap-1">
+                                                🛡️ Pemanasan
+                                            </span>
+                                            <span
+                                                class="text-[10px] bg-amber-200 text-amber-900 font-bold px-1.5 py-0.5 rounded">Pasca-Banned</span>
+                                        </div>
+                                        <div class="text-sm font-bold text-gray-800 mb-1">60 - 120 Detik / Pesan</div>
+                                        <div class="text-[11px] text-gray-600 leading-tight">
+                                            Jeda 5 menit tiap 10 pesan. Sangat lambat & aman untuk akun yang baru pulih
+                                            dari restriksi 24 jam.
+                                        </div>
+                                    </div>
+
                                     <!-- Super Safe Card -->
                                     <div @click="setSpeedMode('super_safe')"
                                         :class="speedMode === 'super_safe' ?
@@ -1096,21 +1123,42 @@
                                     <!-- Fast Card -->
                                     <div @click="setSpeedMode('fast')"
                                         :class="speedMode === 'fast' ?
-                                            'border-amber-500 bg-amber-50/50 ring-2 ring-amber-500/20 shadow-sm' :
+                                            'border-rose-400 bg-rose-50/50 ring-2 ring-rose-400/20 shadow-sm' :
                                             'border-gray-200 hover:border-gray-300 bg-white'"
                                         class="cursor-pointer p-4 rounded-xl border-2 transition-all relative">
                                         <div class="flex items-center justify-between mb-1.5">
                                             <span
-                                                class="text-xs font-black text-amber-700 uppercase tracking-wider flex items-center gap-1">
+                                                class="text-xs font-black text-rose-700 uppercase tracking-wider flex items-center gap-1">
                                                 ⚡ Cepat (Risiko)
                                             </span>
                                             <span
-                                                class="text-[10px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded">Agresif</span>
+                                                class="text-[10px] bg-rose-100 text-rose-800 font-bold px-1.5 py-0.5 rounded">Agresif</span>
                                         </div>
                                         <div class="text-sm font-bold text-gray-800 mb-1">5 - 10 Detik / Pesan</div>
                                         <div class="text-[11px] text-gray-500 leading-tight">
                                             Jeda istirahat 1 menit tiap 40 pesan. Berisiko jika nomor baru.
                                         </div>
+                                    </div>
+                                </div>
+
+                                <!-- Peringatan Kuota Aman Masa Pemulihan Pasca-Banned -->
+                                <div x-show="speedMode === 'warmup' && targetCount > 20" x-transition
+                                    class="mt-3 p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-start gap-2.5">
+                                    <svg class="w-5 h-5 text-amber-600 shrink-0 mt-0.5" fill="none"
+                                        stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                    <div>
+                                        <p class="font-bold text-amber-950">Peringatan Kuota Aman Masa Pemulihan
+                                            (Pasca-Banned)</p>
+                                        <p class="text-amber-800 mt-0.5">
+                                            Anda memasukkan <span class="font-bold text-amber-950"
+                                                x-text="targetCount"></span> nomor target. Untuk nomor WhatsApp yang
+                                            baru selesai dibatasi 24 jam, Meta memantau rasio broadcast dengan sangat
+                                            ketat. Disarankan membatasi pengiriman maksimal <strong>15–20 nomor per
+                                                hari</strong> selama 3–5 hari agar nomor tidak diblokir permanen.
+                                        </p>
                                     </div>
                                 </div>
 
@@ -1186,6 +1234,48 @@
                             <div class="border-t border-gray-100 pt-4 space-y-3">
                                 <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
                                     Teknologi Penyamaran & Keamanan Tambahan
+                                </label>
+
+                                <!-- Simulasi Kehadiran Manusia (Typing Presence) -->
+                                <label
+                                    class="flex items-start gap-3 p-3 rounded-xl border border-gray-200 hover:bg-emerald-50/40 transition cursor-pointer">
+                                    <input type="checkbox" x-model="enableTypingSimulation"
+                                        class="w-4 h-4 mt-0.5 text-[#128C7E] rounded focus:ring-[#128C7E] border-gray-300">
+                                    <div class="flex-1">
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-xs font-bold text-gray-800">Simulasi Kehadiran Manusia
+                                                (Sedang Mengetik...)</span>
+                                            <span
+                                                class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">Anti-Deteksi
+                                                AI</span>
+                                        </div>
+                                        <p class="text-[11px] text-gray-500 mt-0.5">
+                                            Mengirimkan sinyal status <em>"Sedang mengetik..." (composing)</em> 2–4
+                                            detik sebelum pesan dikirim. Sangat efektif menipu sistem ML Meta agar
+                                            mendeteksi aktivitas pengetikan asli manusia.
+                                        </p>
+                                    </div>
+                                </label>
+
+                                <!-- Validasi Nomor WhatsApp Terdaftar -->
+                                <label
+                                    class="flex items-start gap-3 p-3 rounded-xl border border-gray-200 hover:bg-teal-50/40 transition cursor-pointer">
+                                    <input type="checkbox" x-model="enableNumberCheck"
+                                        class="w-4 h-4 mt-0.5 text-[#128C7E] rounded focus:ring-[#128C7E] border-gray-300">
+                                    <div class="flex-1">
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-xs font-bold text-gray-800">Validasi Nomor WhatsApp
+                                                Terdaftar (Filter Nomor Mati)</span>
+                                            <span
+                                                class="text-[10px] bg-teal-100 text-teal-800 font-bold px-1.5 py-0.5 rounded">Proteksi
+                                                Reputasi</span>
+                                        </div>
+                                        <p class="text-[11px] text-gray-500 mt-0.5">
+                                            Memverifikasi apakah nomor target aktif di WhatsApp sebelum mengirim. Nomor
+                                            yang bukan pengguna WhatsApp otomatis dilewati (*skip*) agar reputasi
+                                            pengirim tidak jatuh di mata Meta.
+                                        </p>
+                                    </div>
                                 </label>
 
                                 <!-- Zero-Width Invisible Hash -->
@@ -1423,7 +1513,8 @@
                     <button @click="openTemplateModal(null)"
                         class="bg-[#128C7E] hover:bg-[#075e54] text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md shadow-emerald-500/20 transition-all flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 4v16m8-8H4">
                             </path>
                         </svg>Tambah Template
                     </button>
@@ -2390,6 +2481,8 @@
                 enableSpintax: true,
                 enableZeroWidthHash: true,
                 enableAntiReport: false,
+                enableTypingSimulation: true,
+                enableNumberCheck: true,
                 isPaused: false,
                 isActionLoading: false,
                 delayRemaining: 0,
@@ -2400,7 +2493,14 @@
 
                 setSpeedMode(mode) {
                     this.speedMode = mode;
-                    if (mode === 'super_safe') {
+                    if (mode === 'warmup') {
+                        this.delayMin = 60;
+                        this.delayMax = 120;
+                        this.batchSize = 10;
+                        this.batchCooldown = 300;
+                        this.enableTypingSimulation = true;
+                        this.enableNumberCheck = true;
+                    } else if (mode === 'super_safe') {
                         this.delayMin = 30;
                         this.delayMax = 60;
                         this.batchSize = 20;
@@ -3175,6 +3275,14 @@
                         return;
                     }
 
+                    if (this.speedMode === 'warmup' && this.targetCount > 20) {
+                        if (!confirm(
+                                `⚠️ PERINGATAN PEMULIHAN AKUN (PASCA-BANNED):\n\nAnda memasukkan ${this.targetCount} nomor target dalam Mode Pemanasan.\nUntuk nomor yang baru pulih dari pembatasan 24 jam oleh Meta/WhatsApp, sangat disarankan membatasi pengiriman maksimal 15–20 nomor per hari agar akun tidak terkena penalti permanen.\n\nApakah Anda yakin tetap ingin melanjutkan pengiriman?`
+                            )) {
+                            return;
+                        }
+                    }
+
                     if (this.speedMode === 'custom') {
                         let minD = parseInt(this.delayMin) || 5;
                         let maxD = parseInt(this.delayMax) || 15;
@@ -3220,7 +3328,10 @@
                                 batch_cooldown: this.batchCooldown,
                                 enable_spintax: this.enableSpintax,
                                 enable_zero_width_hash: this.enableZeroWidthHash,
-                                enable_anti_report: this.enableAntiReport
+                                enable_anti_report: this.enableAntiReport,
+                                enable_typing_simulation: this
+                                    .enableTypingSimulation,
+                                enable_number_check: this.enableNumberCheck
                             })
                         });
                         let res = await req.json();

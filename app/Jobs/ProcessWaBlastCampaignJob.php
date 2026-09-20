@@ -56,6 +56,8 @@ class ProcessWaBlastCampaignJob implements ShouldQueue
         $enableSpintax = (bool) ($campaign->enable_spintax ?? true);
         $enableZeroWidthHash = (bool) ($campaign->enable_zero_width_hash ?? true);
         $enableAntiReport = (bool) ($campaign->enable_anti_report ?? false);
+        $enableTypingSimulation = (bool) ($campaign->enable_typing_simulation ?? true);
+        $enableNumberCheck = (bool) ($campaign->enable_number_check ?? true);
 
         ActivityLog::record(
             action: 'blast_processing',
@@ -68,6 +70,8 @@ class ProcessWaBlastCampaignJob implements ShouldQueue
                 'delay_max' => $delayMax,
                 'batch_size' => $batchSize,
                 'batch_cooldown' => $batchCooldown,
+                'enable_typing_simulation' => $enableTypingSimulation,
+                'enable_number_check' => $enableNumberCheck,
                 'wa_instance' => $userInstance,
             ],
             userId: $campaign->user_id
@@ -125,7 +129,22 @@ class ProcessWaBlastCampaignJob implements ShouldQueue
                 continue;
             }
 
-            // ================= 1. TRANSFORMASI KONTEN (ANTI-SPAM FINGERPRINT) =================
+            // ================= 1. VALIDASI NOMOR WHATSAPP TERDAFTAR =================
+            if ($enableNumberCheck && ! str_contains($cleanNumber, '@g.us')) {
+                $isRegistered = $evoService->checkWhatsAppNumber($cleanNumber);
+                if ($isRegistered === false) {
+                    $recipient->update([
+                        'status' => 'failed',
+                        'sent_at' => now(),
+                        'error_message' => 'Nomor tidak terdaftar di WhatsApp (Dilewati otomatis untuk proteksi reputasi akun).',
+                    ]);
+                    $campaign->increment('failed_count');
+
+                    continue;
+                }
+            }
+
+            // ================= 2. TRANSFORMASI KONTEN (ANTI-SPAM FINGERPRINT) =================
             $personalMessage = $recipient->pesan_personal ?: $campaign->pesan;
 
             // Spintax: {Halo|Hai|Selamat pagi}
@@ -149,12 +168,23 @@ class ProcessWaBlastCampaignJob implements ShouldQueue
                 $currentMediaBase64 = EvolutionService::randomizeMediaChecksum($mediaBase64);
             }
 
-            // ================= 2. PENGIRIMAN PESAN LANGSUNG =================
+            // ================= 3. SIMULASI KEHADIRAN MANUSIA (TYPING PRESENCE) =================
+            if ($enableTypingSimulation) {
+                $evoService->sendPresence($cleanNumber, 'composing');
+                // Simulasi jeda mengetik manusia 2.0 s/d 3.8 detik
+                usleep(random_int(2000000, 3800000));
+            }
+
+            // ================= 4. PENGIRIMAN PESAN LANGSUNG =================
             try {
                 if ($currentMediaBase64) {
                     $response = $evoService->sendMedia($cleanNumber, $personalMessage, $currentMediaBase64);
                 } else {
                     $response = $evoService->sendMessage($cleanNumber, $personalMessage);
+                }
+
+                if ($enableTypingSimulation) {
+                    $evoService->sendPresence($cleanNumber, 'paused');
                 }
 
                 if ($response['is_success']) {

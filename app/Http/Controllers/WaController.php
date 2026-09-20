@@ -18,6 +18,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
@@ -476,7 +477,12 @@ class WaController extends Controller
         $batchSize = 20;
         $batchCooldown = 180;
 
-        if ($speedMode === 'normal') {
+        if ($speedMode === 'warmup') {
+            $delayMin = 60;
+            $delayMax = 120;
+            $batchSize = 10;
+            $batchCooldown = 300;
+        } elseif ($speedMode === 'normal') {
             $delayMin = 15;
             $delayMax = 30;
             $batchSize = 25;
@@ -496,9 +502,11 @@ class WaController extends Controller
         $enableSpintax = $request->boolean('enable_spintax', true);
         $enableZeroWidthHash = $request->boolean('enable_zero_width_hash', true);
         $enableAntiReport = $request->boolean('enable_anti_report', false);
+        $enableTypingSimulation = $request->boolean('enable_typing_simulation', true);
+        $enableNumberCheck = $request->boolean('enable_number_check', true);
 
         // Buat Kampanye Blast
-        $campaign = WaBlastCampaign::create([
+        $campaignData = [
             'user_id' => Auth::id(),
             'judul' => 'Blast - ' . now()->translatedFormat('d M Y H:i'),
             'pesan' => $pesanTemplate,
@@ -516,7 +524,20 @@ class WaController extends Controller
             'enable_spintax' => $enableSpintax,
             'enable_zero_width_hash' => $enableZeroWidthHash,
             'enable_anti_report' => $enableAntiReport,
-        ]);
+        ];
+
+        try {
+            if (Schema::hasColumn('wa_blast_campaigns', 'enable_typing_simulation')) {
+                $campaignData['enable_typing_simulation'] = $enableTypingSimulation;
+            }
+            if (Schema::hasColumn('wa_blast_campaigns', 'enable_number_check')) {
+                $campaignData['enable_number_check'] = $enableNumberCheck;
+            }
+        } catch (\Throwable $e) {
+            // Safe fallback if database check is unavailable
+        }
+
+        $campaign = WaBlastCampaign::create($campaignData);
 
         // Buat detail penerima untuk kampanye ini
         $recipientsData = [];
@@ -907,11 +928,40 @@ class WaController extends Controller
 
         $evoService = $this->getEvoService($campaign->user);
 
+        $enableTypingSimulation = (bool) ($campaign->enable_typing_simulation ?? true);
+        $enableNumberCheck = (bool) ($campaign->enable_number_check ?? true);
+
+        // ================= 1. VALIDASI NOMOR WHATSAPP TERDAFTAR =================
+        if ($enableNumberCheck && ! str_contains($cleanNumber, '@g.us')) {
+            $isRegistered = $evoService->checkWhatsAppNumber($cleanNumber);
+            if ($isRegistered === false) {
+                $recipient->update([
+                    'status' => 'failed',
+                    'sent_at' => now(),
+                    'error_message' => 'Nomor tidak terdaftar di WhatsApp (Dilewati otomatis untuk proteksi reputasi akun).',
+                ]);
+                $campaign->increment('failed_count');
+
+                return $recipient;
+            }
+        }
+
+        // ================= 2. SIMULASI KEHADIRAN MANUSIA (TYPING PRESENCE) =================
+        if ($enableTypingSimulation) {
+            $evoService->sendPresence($cleanNumber, 'composing');
+            // Jeda mengetik manusia 1.8 s/d 3.2 detik
+            usleep(random_int(1800000, 3200000));
+        }
+
         try {
             if ($currentMediaBase64) {
                 $response = $evoService->sendMedia($cleanNumber, $personalMessage, $currentMediaBase64);
             } else {
                 $response = $evoService->sendMessage($cleanNumber, $personalMessage);
+            }
+
+            if ($enableTypingSimulation) {
+                $evoService->sendPresence($cleanNumber, 'paused');
             }
 
             if ($response['is_success']) {
@@ -943,13 +993,13 @@ class WaController extends Controller
             $campaign->increment('failed_count');
         }
 
-        // Smart Circuit Breaker: jika 4 kegagalan beruntun, otomatis pause
+        // Smart Circuit Breaker: jika 4 kegagalan beruntun (bukan karena dilewati), otomatis pause
         $recentRecipients = $campaign->recipients()
             ->whereIn('status', ['sent', 'failed'])
             ->orderBy('id', 'desc')
             ->take(4)
             ->get();
-        if ($recentRecipients->count() === 4 && $recentRecipients->every(fn($r) => $r->status === 'failed')) {
+        if ($recentRecipients->count() === 4 && $recentRecipients->every(fn($r) => $r->status === 'failed' && ! str_contains((string) $r->error_message, 'Dilewati'))) {
             $campaign->update(['status' => 'paused']);
             ActivityLog::record(
                 action: 'blast_circuit_breaker',

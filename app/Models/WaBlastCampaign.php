@@ -21,6 +21,8 @@ class WaBlastCampaign extends Model
             'enable_spintax' => 'boolean',
             'enable_zero_width_hash' => 'boolean',
             'enable_anti_report' => 'boolean',
+            'enable_typing_simulation' => 'boolean',
+            'enable_number_check' => 'boolean',
             'completed_at' => 'datetime',
         ];
     }

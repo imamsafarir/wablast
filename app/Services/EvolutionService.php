@@ -390,6 +390,77 @@ class EvolutionService
     }
 
     /**
+     * Mengirim simulasi status kehadiran (presence) ke kontak (misal: 'composing' / sedang mengetik)
+     */
+    public function sendPresence(string $number, string $presence = 'composing', int $delay = 1200): array
+    {
+        try {
+            $response = Http::withHeaders([
+                'apikey' => $this->apiKey,
+                'Content-Type' => 'application/json',
+            ])->timeout(5)->post("{$this->baseUrl}/chat/sendPresence/{$this->instanceName}", [
+                'number' => (string) $number,
+                'presence' => $presence,
+                'delay' => $delay,
+            ]);
+
+            return [
+                'is_success' => $response->successful(),
+                'data' => $response->json(),
+            ];
+        } catch (\Throwable $e) {
+            Log::warning("Failed to send presence to {$number}: {$e->getMessage()}");
+
+            return [
+                'is_success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Memeriksa apakah suatu nomor terdaftar dan aktif di WhatsApp (Pre-send verification)
+     * Mengembalikan true jika terdaftar, false jika tidak terdaftar, atau null jika gagal menghubungi server
+     */
+    public function checkWhatsAppNumber(string $number): ?bool
+    {
+        // Grup WhatsApp selalu dianggap valid
+        if (str_contains($number, '@g.us')) {
+            return true;
+        }
+
+        try {
+            $cleanNumber = (string) preg_replace('/\D/', '', $number);
+            if (empty($cleanNumber)) {
+                return false;
+            }
+
+            $response = Http::withHeaders([
+                'apikey' => $this->apiKey,
+                'Content-Type' => 'application/json',
+            ])->timeout(6)->post("{$this->baseUrl}/chat/whatsappNumbers/{$this->instanceName}", [
+                'numbers' => [$cleanNumber],
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                if (is_array($data) && ! empty($data)) {
+                    $first = $data[0] ?? null;
+                    if (is_array($first) && array_key_exists('exists', $first)) {
+                        return (bool) $first['exists'];
+                    }
+                }
+            }
+
+            return null;
+        } catch (\Throwable $e) {
+            Log::warning("Failed to verify WhatsApp number {$number}: {$e->getMessage()}");
+
+            return null;
+        }
+    }
+
+    /**
      * Mengambil daftar grup WhatsApp yang diikuti oleh instance nomor ini
      */
     public function fetchWaGroups(bool $refresh = false): array
