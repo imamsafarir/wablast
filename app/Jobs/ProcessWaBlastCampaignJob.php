@@ -89,7 +89,6 @@ class ProcessWaBlastCampaignJob implements ShouldQueue
             $q->whereNull('user_id')->orWhere('user_id', $campaign->user_id);
         })->pluck('nomor')->map(fn($n) => EvolutionService::normalizePhoneNumber($n))->flip()->toArray();
 
-        $isFirst = true;
         $consecutiveFailures = 0;
         $sentInBatchCount = 0;
 
@@ -126,33 +125,7 @@ class ProcessWaBlastCampaignJob implements ShouldQueue
                 continue;
             }
 
-            // ================= 1. JEDA & BATCH COOLDOWN =================
-            if (! $isFirst) {
-                if ($sentInBatchCount >= $batchSize) {
-                    ActivityLog::record(
-                        action: 'blast_cooldown',
-                        description: "Sesi istirahat anti-bot: Kampanye #{$campaign->id} beristirahat selama {$batchCooldown} detik setelah mengirim {$sentInBatchCount} pesan.",
-                        subject: $campaign,
-                        userId: $campaign->user_id
-                    );
-
-                    sleep($batchCooldown);
-                    $sentInBatchCount = 0;
-                } else {
-                    $randomDelay = random_int($delayMin, $delayMax);
-                    sleep($randomDelay);
-                }
-            }
-            $isFirst = false;
-
-            // Cek kembali status kampanye setelah jeda tidur
-            $campaign->refresh();
-            if (in_array($campaign->status, ['cancelled', 'paused'], true)) {
-                $recipient->update(['status' => 'pending']);
-                break;
-            }
-
-            // ================= 2. TRANSFORMASI KONTEN (ANTI-SPAM FINGERPRINT) =================
+            // ================= 1. TRANSFORMASI KONTEN (ANTI-SPAM FINGERPRINT) =================
             $personalMessage = $recipient->pesan_personal ?: $campaign->pesan;
 
             // Spintax: {Halo|Hai|Selamat pagi}
@@ -176,7 +149,7 @@ class ProcessWaBlastCampaignJob implements ShouldQueue
                 $currentMediaBase64 = EvolutionService::randomizeMediaChecksum($mediaBase64);
             }
 
-            // ================= 3. PENGIRIMAN PESAN =================
+            // ================= 2. PENGIRIMAN PESAN LANGSUNG =================
             try {
                 if ($currentMediaBase64) {
                     $response = $evoService->sendMedia($cleanNumber, $personalMessage, $currentMediaBase64);
@@ -217,7 +190,7 @@ class ProcessWaBlastCampaignJob implements ShouldQueue
                 $consecutiveFailures++;
             }
 
-            // ================= 4. SMART CIRCUIT BREAKER (REM DARURAT) =================
+            // ================= 3. SMART CIRCUIT BREAKER (REM DARURAT) =================
             // Jika 4 kegagalan beruntun, otomatis PAUSE agar nomor tidak diblokir permanen
             if ($consecutiveFailures >= 4) {
                 $campaign->update(['status' => 'paused']);
@@ -233,6 +206,43 @@ class ProcessWaBlastCampaignJob implements ShouldQueue
                     userId: $campaign->user_id
                 );
 
+                break;
+            }
+
+            // Cek status kampanye jika dipause/dicancel pengguna saat pengiriman
+            $campaign->refresh();
+            if (in_array($campaign->status, ['cancelled', 'paused'], true)) {
+                break;
+            }
+
+            // Cek apakah masih ada penerima berikutnya yang pending
+            $hasRemainingPending = WaBlastRecipient::where('wa_blast_campaign_id', $campaign->id)
+                ->where('status', 'pending')
+                ->exists();
+
+            if (! $hasRemainingPending) {
+                break;
+            }
+
+            // ================= 4. JEDA & BATCH COOLDOWN SETELAH PENGIRIMAN =================
+            if ($sentInBatchCount >= $batchSize) {
+                ActivityLog::record(
+                    action: 'blast_cooldown',
+                    description: "Sesi istirahat anti-bot: Kampanye #{$campaign->id} beristirahat selama {$batchCooldown} detik setelah mengirim {$sentInBatchCount} pesan.",
+                    subject: $campaign,
+                    userId: $campaign->user_id
+                );
+
+                sleep($batchCooldown);
+                $sentInBatchCount = 0;
+            } else {
+                $randomDelay = random_int($delayMin, $delayMax);
+                sleep($randomDelay);
+            }
+
+            // Cek kembali status kampanye setelah jeda tidur
+            $campaign->refresh();
+            if (in_array($campaign->status, ['cancelled', 'paused'], true)) {
                 break;
             }
         }

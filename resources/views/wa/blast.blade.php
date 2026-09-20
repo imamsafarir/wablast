@@ -98,12 +98,93 @@
                                 </div>
                             </div>
 
+                            <!-- LIVE ACTIVITY & DELAY COUNTDOWN STATUS -->
+                            <div class="mb-4 p-3 rounded-2xl border text-xs text-left transition-all"
+                                :class="isPaused ? 'bg-amber-50 border-amber-200 text-amber-900' : (isCooldown ?
+                                    'bg-indigo-50 border-indigo-200 text-indigo-900' : (delayRemaining > 0 ?
+                                        'bg-teal-50 border-teal-200 text-teal-900' :
+                                        'bg-emerald-50 border-emerald-200 text-emerald-900'))">
+
+                                <!-- State 1: Sedang Mengirim ke WhatsApp -->
+                                <div x-show="!isPaused && delayRemaining <= 0" class="flex items-center gap-2.5">
+                                    <svg class="w-4 h-4 text-emerald-600 animate-spin shrink-0" fill="none"
+                                        viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10"
+                                            stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor"
+                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                        </path>
+                                    </svg>
+                                    <div class="min-w-0 flex-1 leading-tight">
+                                        <span class="font-bold text-emerald-950 block">Mengirim pesan ke
+                                            WhatsApp...</span>
+                                        <span class="text-[11px] text-emerald-700 truncate block"
+                                            x-show="nextRecipient">
+                                            Target: <strong
+                                                x-text="nextRecipient?.nama ? `${nextRecipient.nama} (${nextRecipient.nomor})` : nextRecipient?.nomor"></strong>
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- State 2: Sedang Menunggu Jeda Delay Anti-Ban -->
+                                <div x-show="!isPaused && delayRemaining > 0 && !isCooldown"
+                                    class="flex items-start gap-2.5">
+                                    <span class="text-base shrink-0">⏳</span>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center justify-between gap-2">
+                                            <span class="font-bold text-teal-950">Jeda Aman Anti-Ban</span>
+                                            <span
+                                                class="font-mono font-black text-teal-700 bg-teal-100/90 px-2 py-0.5 rounded-lg text-xs tracking-wide shrink-0"
+                                                x-text="delayRemaining + ' detik'"></span>
+                                        </div>
+                                        <p class="text-[11px] text-teal-700/90 mt-0.5 leading-snug">
+                                            <template x-if="lastRecipient">
+                                                <span>Pesan sebelumnya terkirim ke <strong
+                                                        x-text="lastRecipient?.nama || lastRecipient?.nomor"></strong>.
+                                                </span>
+                                            </template>
+                                            Sistem sengaja jeda acak agar akun WhatsApp Anda terlindungi dari deteksi
+                                            spam/bot.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <!-- State 3: Sedang Cooldown Batch Anti-Bot -->
+                                <div x-show="!isPaused && isCooldown && delayRemaining > 0"
+                                    class="flex items-start gap-2.5">
+                                    <span class="text-base shrink-0">☕</span>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center justify-between gap-2">
+                                            <span class="font-bold text-indigo-950">Istirahat Sesi Batch
+                                                Anti-Bot</span>
+                                            <span
+                                                class="font-mono font-black text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-lg text-xs tracking-wide shrink-0"
+                                                x-text="delayRemaining + ' detik'"></span>
+                                        </div>
+                                        <p class="text-[11px] text-indigo-700/90 mt-0.5 leading-snug">
+                                            Sistem istirahat sejenak setelah mengirim satu batch pesan agar pola blast
+                                            menyerupai manusia alami.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <!-- State 4: Sedang Dijeda Pengguna -->
+                                <div x-show="isPaused" class="flex items-center gap-2">
+                                    <span class="text-base shrink-0">⏸️</span>
+                                    <span class="text-xs font-semibold text-amber-900 leading-tight">
+                                        Pengiriman dijeda sementara. Klik tombol <strong>Lanjutkan Pengiriman</strong>
+                                        untuk meneruskan.
+                                    </span>
+                                </div>
+                            </div>
+
                             <!-- Tombol Pause / Resume -->
                             <div class="mb-4">
                                 <template x-if="!isPaused">
                                     <button type="button" @click="pauseCampaign()" :disabled="isActionLoading"
                                         class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 px-4 rounded-xl transition shadow-sm flex items-center justify-center gap-2 text-sm cursor-pointer disabled:opacity-50">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                 d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                         </svg>
@@ -114,7 +195,8 @@
                                 <template x-if="isPaused">
                                     <button type="button" @click="resumeCampaign()" :disabled="isActionLoading"
                                         class="w-full bg-[#128C7E] hover:bg-[#0e6b60] text-white font-bold py-2.5 px-4 rounded-xl transition shadow-sm flex items-center justify-center gap-2 text-sm cursor-pointer disabled:opacity-50">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                 d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z">
                                             </path>
@@ -172,7 +254,8 @@
                             <div>
                                 <div class="text-xs font-bold flex items-center gap-1.5"
                                     :class="isPaused ? 'text-amber-400' : 'text-gray-100'">
-                                    <span x-text="isPaused ? 'Pengiriman Dijeda' : 'Pengiriman Blast Aktif'"></span>
+                                    <span
+                                        x-text="isPaused ? 'Pengiriman Dijeda' : (delayRemaining > 0 ? (isCooldown ? 'Istirahat Sesi Batch' : 'Jeda Aman Anti-Ban') : 'Mengirim ke WA...')"></span>
                                     <span class="w-2 h-2 rounded-full"
                                         :class="isPaused ? 'bg-amber-400' : 'bg-emerald-400 animate-pulse'"></span>
                                 </div>
@@ -180,6 +263,9 @@
                                     <span x-text="sentCount" class="font-bold text-white"></span> / <span
                                         x-text="totalTarget" class="font-bold text-white"></span> nomor (<span
                                         x-text="`${progress}%`" class="text-emerald-400 font-bold"></span>)
+                                    <span x-show="delayRemaining > 0 && !isPaused"
+                                        class="text-teal-300 ml-1 font-mono font-bold"
+                                        x-text="`• ⏳ ${delayRemaining}s`"></span>
                                 </div>
                             </div>
                         </div>
@@ -1047,7 +1133,13 @@
                                 </div>
 
                                 <!-- Form Pengaturan Kustom (Collapse) -->
-                                <div x-show="speedMode === 'custom'" x-collapse
+                                <div x-show="speedMode === 'custom'"
+                                    x-transition:enter="transition ease-out duration-200"
+                                    x-transition:enter-start="opacity-0 -translate-y-2 scale-95"
+                                    x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                                    x-transition:leave="transition ease-in duration-150"
+                                    x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                                    x-transition:leave-end="opacity-0 -translate-y-2 scale-95"
                                     class="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
                                     <h4 class="text-xs font-bold text-gray-700 uppercase tracking-wider mb-3">
                                         Pengaturan Parameter Manual</h4>
@@ -1055,28 +1147,28 @@
                                         <div>
                                             <label class="block text-[11px] font-semibold text-gray-600 mb-1">Min Delay
                                                 (detik)</label>
-                                            <input type="number" min="2" max="300"
+                                            <input type="number" min="1" max="300"
                                                 x-model.number="delayMin"
                                                 class="w-full text-xs font-medium rounded-lg border-gray-300 focus:border-[#128C7E] focus:ring-[#128C7E]">
                                         </div>
                                         <div>
                                             <label class="block text-[11px] font-semibold text-gray-600 mb-1">Max Delay
                                                 (detik)</label>
-                                            <input type="number" min="3" max="600"
+                                            <input type="number" min="1" max="600"
                                                 x-model.number="delayMax"
                                                 class="w-full text-xs font-medium rounded-lg border-gray-300 focus:border-[#128C7E] focus:ring-[#128C7E]">
                                         </div>
                                         <div>
                                             <label class="block text-[11px] font-semibold text-gray-600 mb-1">Ukuran
                                                 Batch (pesan)</label>
-                                            <input type="number" min="5" max="100"
+                                            <input type="number" min="2" max="100"
                                                 x-model.number="batchSize"
                                                 class="w-full text-xs font-medium rounded-lg border-gray-300 focus:border-[#128C7E] focus:ring-[#128C7E]">
                                         </div>
                                         <div>
                                             <label class="block text-[11px] font-semibold text-gray-600 mb-1">Cooldown
                                                 Batch (detik)</label>
-                                            <input type="number" min="10" max="1800"
+                                            <input type="number" min="5" max="1800"
                                                 x-model.number="batchCooldown"
                                                 class="w-full text-xs font-medium rounded-lg border-gray-300 focus:border-[#128C7E] focus:ring-[#128C7E]">
                                         </div>
@@ -1414,8 +1506,8 @@
                 <div
                     class="mb-6 p-4 bg-gray-50/80 rounded-2xl border border-gray-200/80 flex flex-col md:flex-row items-center justify-between gap-3">
                     <div class="relative w-full md:w-80">
-                        <svg class="w-4 h-4 text-gray-400 absolute left-3 top-3" fill="none" stroke="currentColor"
-                            viewBox="0 0 24 24">
+                        <svg class="w-4 h-4 text-gray-400 absolute left-3 top-3" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                         </svg>
@@ -2300,6 +2392,11 @@
                 enableAntiReport: false,
                 isPaused: false,
                 isActionLoading: false,
+                delayRemaining: 0,
+                isCooldown: false,
+                lastRecipient: null,
+                nextRecipient: null,
+                delayCountdownInterval: null,
 
                 setSpeedMode(mode) {
                     this.speedMode = mode;
@@ -2318,6 +2415,11 @@
                         this.delayMax = 10;
                         this.batchSize = 40;
                         this.batchCooldown = 60;
+                    } else if (mode === 'custom') {
+                        if (!this.delayMin || this.delayMin < 1) this.delayMin = 10;
+                        if (!this.delayMax || this.delayMax < this.delayMin) this.delayMax = 20;
+                        if (!this.batchSize || this.batchSize < 2) this.batchSize = 20;
+                        if (!this.batchCooldown || this.batchCooldown < 5) this.batchCooldown = 60;
                     }
                 },
 
@@ -2431,7 +2533,8 @@
                     try {
                         let res = await fetch('{{ route('wa.blast.active') }}');
                         let data = await res.json();
-                        if (data.active && data.campaign) {
+                        if (data.active && data.campaign && data.campaign.total_target > 0 && data
+                            .campaign.processed < data.campaign.total_target) {
                             this.currentCampaignId = data.campaign.id;
                             this.totalTarget = data.campaign.total_target;
                             this.sentCount = data.campaign.processed;
@@ -3066,10 +3169,24 @@
                     if (!this.isInstanceConnected) {
                         if (confirm(
                                 `WhatsApp pada instance "${this.userInstance}" belum terhubung!\n\nApakah Anda ingin membuka menu Pengaturan untuk menghubungkan akun WhatsApp (Scan QR Code)?`
-                                )) {
+                            )) {
                             window.location.href = '{{ route('wa.setting') }}';
                         }
                         return;
+                    }
+
+                    if (this.speedMode === 'custom') {
+                        let minD = parseInt(this.delayMin) || 5;
+                        let maxD = parseInt(this.delayMax) || 15;
+                        if (minD > maxD) {
+                            let temp = minD;
+                            minD = maxD;
+                            maxD = temp;
+                        }
+                        this.delayMin = Math.max(1, minD);
+                        this.delayMax = Math.max(this.delayMin, maxD);
+                        this.batchSize = Math.max(2, parseInt(this.batchSize) || 20);
+                        this.batchCooldown = Math.max(5, parseInt(this.batchCooldown) || 60);
                     }
 
                     this.isSending = true;
@@ -3079,6 +3196,10 @@
                     this.berhasilCount = 0;
                     this.gagalCount = 0;
                     this.isPaused = false;
+                    this.delayRemaining = 0;
+                    this.isCooldown = false;
+                    this.lastRecipient = null;
+                    this.nextRecipient = null;
 
                     try {
                         let req = await fetch('{{ route('wa.blast.start') }}', {
@@ -3127,6 +3248,14 @@
 
                 startPolling(campaignId) {
                     if (this.pollTimer) clearInterval(this.pollTimer);
+                    if (this.delayCountdownInterval) clearInterval(this.delayCountdownInterval);
+
+                    // Client-side smooth countdown timer (1 detik per tick)
+                    this.delayCountdownInterval = setInterval(() => {
+                        if (!this.isPaused && this.delayRemaining > 0) {
+                            this.delayRemaining--;
+                        }
+                    }, 1000);
 
                     this.pollTimer = setInterval(async () => {
                         try {
@@ -3141,10 +3270,18 @@
                             this.gagalCount = statusData.failed_count;
                             this.isPaused = (statusData.status === 'paused' || statusData
                                 .is_paused === true);
+                            this.delayRemaining = statusData.delay_remaining ?? 0;
+                            this.isCooldown = statusData.is_cooldown ?? false;
+                            this.lastRecipient = statusData.last_recipient ?? null;
+                            this.nextRecipient = statusData.next_recipient ?? null;
 
                             if (statusData.completed) {
                                 clearInterval(this.pollTimer);
                                 this.pollTimer = null;
+                                if (this.delayCountdownInterval) {
+                                    clearInterval(this.delayCountdownInterval);
+                                    this.delayCountdownInterval = null;
+                                }
                                 setTimeout(() => {
                                     this.isSending = false;
                                     this.hideSendingModal = false;

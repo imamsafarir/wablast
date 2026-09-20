@@ -487,10 +487,10 @@ class WaController extends Controller
             $batchSize = 40;
             $batchCooldown = 60;
         } elseif ($speedMode === 'custom') {
-            $delayMin = max(1, (int) $request->input('delay_min', 30));
-            $delayMax = max($delayMin, (int) $request->input('delay_max', 60));
-            $batchSize = max(5, (int) $request->input('batch_size', 20));
-            $batchCooldown = max(10, (int) $request->input('batch_cooldown', 180));
+            $delayMin = max(1, (int) $request->input('delay_min', 10));
+            $delayMax = max($delayMin, (int) $request->input('delay_max', 20));
+            $batchSize = max(2, (int) $request->input('batch_size', 20));
+            $batchCooldown = max(5, (int) $request->input('batch_cooldown', 60));
         }
 
         $enableSpintax = $request->boolean('enable_spintax', true);
@@ -605,6 +605,17 @@ class WaController extends Controller
             return response()->json(['active' => false]);
         }
 
+        // Cek integritas kampanye: jika tidak ada penerima sama sekali, atau sudah selesai semua
+        $pendingOrSendingCount = $campaign->recipients()->whereIn('status', ['pending', 'sending'])->count();
+        if ($campaign->total_target === 0 || $campaign->recipients()->count() === 0 || $pendingOrSendingCount === 0) {
+            $campaign->update([
+                'status' => 'completed',
+                'completed_at' => now(),
+            ]);
+
+            return response()->json(['active' => false]);
+        }
+
         $processed = $campaign->success_count + $campaign->failed_count;
         $progress = $campaign->total_target > 0
             ? (int) round(($processed / $campaign->total_target) * 100)
@@ -633,23 +644,50 @@ class WaController extends Controller
     {
         $campaign = WaBlastCampaign::findOrFail($id);
 
-        // Jika kampanye masih berjalan, pastikan worker queue aktif
+        $delayMin = max(1, (int) ($campaign->delay_min ?: 10));
+        $delayMax = max($delayMin, (int) ($campaign->delay_max ?: 30));
+        $batchSize = max(2, (int) ($campaign->batch_size ?: 20));
+        $batchCooldown = max(5, (int) ($campaign->batch_cooldown ?: 60));
+
+        $delayRemaining = 0;
+        $isCooldown = false;
+
+        // Jika kampanye masih berjalan, pastikan worker queue aktif dan jalankan fail-safe inline processing
         if (in_array($campaign->status, ['pending', 'processing'], true)) {
             self::ensureQueueWorkerRunning();
 
-            // Fail-safe Inline Processor: jika queue worker tidak aktif (misal di Windows / Herd),
-            // polling frontend secara otomatis memproses penerima berikutnya sesuai jeda anti-ban
-            $lastRecipientActivity = $campaign->recipients()
-                ->whereIn('status', ['sent', 'failed', 'sending'])
-                ->orderBy('updated_at', 'desc')
-                ->value('updated_at');
+            // Reset penerima yang macet di status 'sending' lebih dari (delay_max + 15 detik)
+            $campaign->recipients()
+                ->where('status', 'sending')
+                ->where('updated_at', '<', now()->subSeconds(max(15, $delayMax + 15)))
+                ->update(['status' => 'pending']);
 
-            $minDelay = max(2, (int) ($campaign->delay_min ?: 5));
-            $isDue = ! $lastRecipientActivity || now()->diffInSeconds($lastRecipientActivity) >= $minDelay;
+            // Cek penerima terakhir yang telah selesai (sent atau failed)
+            $lastProcessed = $campaign->recipients()
+                ->whereIn('status', ['sent', 'failed'])
+                ->orderBy('sent_at', 'desc')
+                ->first();
 
-            if ($isDue) {
+            $currentSending = $campaign->recipients()
+                ->where('status', 'sending')
+                ->first();
+
+            $processed = $campaign->success_count + $campaign->failed_count;
+            $isCooldown = ($processed > 0 && ($processed % $batchSize === 0));
+            $requiredDelay = $isCooldown ? $batchCooldown : $delayMin;
+
+            if ($lastProcessed && $lastProcessed->sent_at) {
+                $elapsedSeconds = (int) now()->diffInSeconds($lastProcessed->sent_at);
+                $delayRemaining = max(0, $requiredDelay - $elapsedSeconds);
+            } else {
+                $delayRemaining = 0;
+            }
+
+            // Jika tidak ada worker yang sedang 'sending' dan jeda delay sudah terpenuhi, proses penerima berikutnya
+            if (! $currentSending && $delayRemaining <= 0) {
                 $this->processNextRecipientForCampaign($campaign);
                 $campaign->refresh();
+                $delayRemaining = $isCooldown ? $batchCooldown : $delayMin;
             }
         }
 
@@ -657,6 +695,18 @@ class WaController extends Controller
         $progress = $campaign->total_target > 0
             ? (int) round(($processed / $campaign->total_target) * 100)
             : 0;
+
+        $lastRecipient = $campaign->recipients()
+            ->whereIn('status', ['sent', 'failed'])
+            ->orderBy('sent_at', 'desc')
+            ->select('nomor', 'nama', 'status')
+            ->first();
+
+        $nextRecipient = $campaign->recipients()
+            ->where('status', 'pending')
+            ->orderBy('id', 'asc')
+            ->select('nomor', 'nama')
+            ->first();
 
         return response()->json([
             'id' => $campaign->id,
@@ -667,8 +717,21 @@ class WaController extends Controller
             'processed' => $processed,
             'progress' => $progress,
             'speed_mode' => $campaign->speed_mode ?? 'super_safe',
+            'delay_min' => $delayMin,
+            'delay_max' => $delayMax,
+            'delay_remaining' => $delayRemaining,
+            'is_cooldown' => $isCooldown,
             'is_paused' => $campaign->status === 'paused',
             'completed' => in_array($campaign->status, ['completed', 'failed', 'cancelled'], true),
+            'last_recipient' => $lastRecipient ? [
+                'nomor' => $lastRecipient->nomor,
+                'nama' => $lastRecipient->nama,
+                'status' => $lastRecipient->status,
+            ] : null,
+            'next_recipient' => $nextRecipient ? [
+                'nomor' => $nextRecipient->nomor,
+                'nama' => $nextRecipient->nama,
+            ] : null,
         ]);
     }
 
@@ -734,10 +797,11 @@ class WaController extends Controller
             return null;
         }
 
-        // Reset penerima yang macet di status 'sending' lebih dari 2 menit
+        // Reset penerima yang macet di status 'sending' lebih dari waktu aman
+        $stuckSeconds = max(15, ($campaign->delay_max ?: 30) + 15);
         $campaign->recipients()
             ->where('status', 'sending')
-            ->where('updated_at', '<', now()->subMinutes(2))
+            ->where('updated_at', '<', now()->subSeconds($stuckSeconds))
             ->update(['status' => 'pending']);
 
         $recipient = $campaign->recipients()
